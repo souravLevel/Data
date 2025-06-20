@@ -1,0 +1,1810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Retention Analysis</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: #1e293b;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 32px;
+            text-align: center;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 32px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .header p {
+            margin: 12px 0 0 0;
+            color: #64748b;
+            font-size: 16px;
+        }
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+        .metric-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #10b981;
+        }
+        .metric-card h3 {
+            margin: 0 0 8px 0;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
+            font-weight: 600;
+        }
+        .metric-card .value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #059669;
+            font-family: 'SF Mono', Monaco, 'Consolas', monospace;
+        }
+        .charts-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+        .charts-container-full {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+        .chart-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        .chart-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #374151;
+            text-align: center;
+        }
+        .chart-wrapper {
+            position: relative;
+            height: 300px;
+        }
+        .retention-table {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            margin-bottom: 24px;
+        }
+        .table-header {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 20px 24px;
+            font-size: 18px;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        .table-header:hover {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        }
+        .collapse-toggle {
+            font-size: 20px;
+            transition: transform 0.3s ease;
+        }
+        .collapse-toggle.collapsed {
+            transform: rotate(-90deg);
+        }
+        .table-container {
+            overflow-x: auto;
+            transition: max-height 0.3s ease;
+        }
+        .table-container.collapsed {
+            max-height: 0;
+            overflow: hidden;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 16px 12px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 14px;
+        }
+        th {
+            background: #ecfdf5;
+            font-weight: 600;
+            color: #065f46;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .number-col {
+            text-align: right;
+            font-family: 'SF Mono', Monaco, 'Consolas', monospace;
+        }
+        .month-col {
+            font-weight: 600;
+            color: #1e293b;
+        }
+        .percentage-col {
+            font-weight: 600;
+            color: #059669;
+        }
+        tr:hover {
+            background-color: #f0fdf4;
+        }
+        .insights-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 24px;
+            margin-top: 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        .insights-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #374151;
+        }
+        .insights-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 16px;
+        }
+        .insight-item {
+            background: #f0fdf4;
+            padding: 16px;
+            border-radius: 8px;
+            border-left: 4px solid #10b981;
+        }
+        .currency-breakdown {
+            margin-top: 24px;
+        }
+        .currency-table {
+            font-size: 13px;
+        }
+        .currency-table th,
+        .currency-table td {
+            padding: 8px 12px;
+        }
+        .currency-charts-section {
+            margin-top: 32px;
+        }
+        .currency-controls {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        .controls-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #374151;
+        }
+        .control-group {
+            margin-bottom: 20px;
+        }
+        .control-label {
+            display: block;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+        .filter-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .filter-btn {
+            padding: 8px 16px;
+            border: 2px solid #e2e8f0;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        .filter-btn:hover {
+            border-color: #10b981;
+            background: #f0fdf4;
+        }
+        .filter-btn.active {
+            background: #10b981;
+            color: white;
+            border-color: #10b981;
+        }
+        .currency-charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+        .chart-container-large {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            grid-column: 1 / -1;
+        }
+        .chart-wrapper-large {
+            position: relative;
+            height: 400px;
+        }
+        .platform-section {
+            margin-top: 32px;
+        }
+        .platform-charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+        .section-divider {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            height: 4px;
+            border-radius: 2px;
+            margin: 32px 0;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+        }
+        @media (max-width: 768px) {
+            .charts-container {
+                grid-template-columns: 1fr;
+            }
+            .charts-container-full {
+                grid-template-columns: 1fr;
+            }
+            .currency-charts-grid {
+                grid-template-columns: 1fr;
+            }
+            .platform-charts-grid {
+                grid-template-columns: 1fr;
+            }
+            .metrics-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .container {
+                padding: 12px;
+            }
+            .header {
+                padding: 20px;
+            }
+            .header h1 {
+                font-size: 24px;
+            }
+            .filter-buttons {
+                justify-content: center;
+            }
+            .filter-btn {
+                font-size: 12px;
+                padding: 6px 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>User Retention Analysis</h1>
+            <p>Users who resubscribed after subscription end (January - May 2025)</p>
+        </div>
+
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <h3>Average Retention</h3>
+                <div class="value">21.69%</div>
+            </div>
+            <div class="metric-card">
+                <h3>Total Users</h3>
+                <div class="value">4,448</div>
+            </div>
+            <div class="metric-card">
+                <h3>Total Retained</h3>
+                <div class="value">958</div>
+            </div>
+            <div class="metric-card">
+                <h3>Total Non-Retained</h3>
+                <div class="value">3,495</div>
+            </div>
+            <div class="metric-card">
+                <h3>Best Month</h3>
+                <div class="value">May 28.15%</div>
+            </div>
+            <div class="metric-card">
+                <h3>Worst Month</h3>
+                <div class="value">Feb 14.54%</div>
+            </div>
+            <div class="metric-card">
+                <h3>INR Retention Rate</h3>
+                <div class="value">19.73%</div>
+            </div>
+            <div class="metric-card">
+                <h3>Non-INR Retention Rate</h3>
+                <div class="value">36.84%</div>
+            </div>
+        </div>
+
+        <div class="charts-container-full">
+            <div class="chart-container">
+                <div class="chart-title">Monthly Retention Rates</div>
+                <div class="chart-wrapper">
+                    <canvas id="retentionRateChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title">User Volume vs Retained Users</div>
+                <div class="chart-wrapper">
+                    <canvas id="volumeComparisonChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title">Retention vs Non-Retention by Month</div>
+                <div class="chart-wrapper">
+                    <canvas id="retentionComparisonChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="retention-table">
+            <div class="table-header">Monthly Retention Breakdown</div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="month-col">Month</th>
+                            <th class="number-col">Total Users</th>
+                            <th class="number-col">Retained Users</th>
+                            <th class="number-col">Retention Rate</th>
+                            <th class="number-col">Retained (IND)</th>
+                            <th class="number-col">Retained (Others)</th>
+                            <th class="number-col">Churned (IND)</th>
+                            <th class="number-col">Churned (Others)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="retentionTableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="currency-charts-section">
+            <div class="currency-controls">
+                <div class="controls-title">Interactive Currency Analysis</div>
+                
+                <div class="control-group">
+                    <label class="control-label">Filter by Currency:</label>
+                    <div class="filter-buttons" id="currencyFilters">
+                        <button class="filter-btn active" data-currency="all">All Currencies</button>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label class="control-label">Filter by Month:</label>
+                    <div class="filter-buttons" id="monthFilters">
+                        <button class="filter-btn active" data-month="all">All Months</button>
+                        <button class="filter-btn" data-month="January">January</button>
+                        <button class="filter-btn" data-month="February">February</button>
+                        <button class="filter-btn" data-month="March">March</button>
+                        <button class="filter-btn" data-month="April">April</button>
+                        <button class="filter-btn" data-month="May">May</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="currency-charts-grid">
+                <div class="chart-container">
+                    <div class="chart-title">Currency Distribution by Month</div>
+                    <div class="chart-wrapper">
+                        <canvas id="currencyDistributionByMonthChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title">Top Currencies Trend</div>
+                    <div class="chart-wrapper">
+                        <canvas id="topCurrenciesTrendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="currency-breakdown">
+            <div class="retention-table">
+                <div class="table-header" onclick="toggleTable('currencyTable')">
+                    <span>Detailed Currency Breakdown</span>
+                    <span class="collapse-toggle" id="currencyTableToggle">▼</span>
+                </div>
+                <div class="table-container" id="currencyTable">
+                    <table class="currency-table">
+                        <thead>
+                            <tr>
+                                <th class="month-col">Month</th>
+                                <th class="number-col">Currency</th>
+                                <th class="number-col">Retained Users</th>
+                                <th class="number-col">Non-Retained Users</th>
+                            </tr>
+                        </thead>
+                        <tbody id="currencyTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-divider"></div>
+
+        <div class="retention-table">
+            <div class="table-header">
+                <span>Retention vs Non-Retention Analysis</span>
+            </div>
+            <div class="table-container">
+                <div class="charts-container-full">
+                    <div class="chart-container">
+                        <div class="chart-title">Currency Retention Rates Comparison</div>
+                        <div class="chart-wrapper">
+                            <canvas id="currencyRetentionRatesChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-title">Non-Retained Users by Currency</div>
+                        <div class="chart-wrapper">
+                            <canvas id="nonRetainedByCurrencyChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-title">Retention Rate Trends by Top Currencies</div>
+                        <div class="chart-wrapper">
+                            <canvas id="retentionRateTrendsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="retention-table">
+            <div class="table-header" onclick="toggleTable('retentionAnalysisTable')">
+                <span>Detailed Retention vs Non-Retention Breakdown</span>
+                <span class="collapse-toggle" id="retentionAnalysisTableToggle">▼</span>
+            </div>
+            <div class="table-container" id="retentionAnalysisTable">
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="month-col">Month</th>
+                            <th class="month-col">Currency</th>
+                            <th class="number-col">Total Users</th>
+                            <th class="number-col">Retained</th>
+                            <th class="number-col">Non-Retained</th>
+                            <th class="number-col">Retention Rate</th>
+                            <th class="number-col">Non-Retention Rate</th>
+                        </tr>
+                    </thead>
+                    <tbody id="retentionAnalysisTableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="section-divider"></div>
+
+        <div class="platform-section">
+            <div class="retention-table">
+                <div class="table-header" onclick="toggleTable('platformTable')">
+                    <span>Payment Platform Analysis</span>
+                    <span class="collapse-toggle" id="platformTableToggle">▼</span>
+                </div>
+                <div class="table-container" id="platformTable">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th class="month-col">Month</th>
+                                <th class="number-col">Platform</th>
+                                <th class="number-col">Retained Users</th>
+                                <th class="number-col">Percentage</th>
+                                <th class="number-col">Platform Share</th>
+                            </tr>
+                        </thead>
+                        <tbody id="platformTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="platform-charts-grid">
+                <div class="chart-container">
+                    <div class="chart-title">Platform Distribution Over Time</div>
+                    <div class="chart-wrapper">
+                        <canvas id="platformTrendChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title">Overall Platform Share</div>
+                    <div class="chart-wrapper">
+                        <canvas id="platformShareChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-container-large">
+                <div class="chart-title">Platform Performance by Month</div>
+                <div class="chart-wrapper-large">
+                    <canvas id="platformPerformanceChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="insights-section">
+            <div class="insights-title">Key Insights</div>
+            <div class="insights-list">
+                <div class="insight-item">
+                    <strong>Steady Growth:</strong> Retention rates improved consistently from 14.54% in February to 28.15% in May, demonstrating strong operational improvements and user experience enhancements.
+                </div>
+                <div class="insight-item">
+                    <strong>INR Market Challenge:</strong> While INR users dominate in volume (83.4% of retained users), they have a lower retention rate (19.73%) compared to non-INR currencies (36.84%), indicating opportunities for market-specific improvements.
+                </div>
+                <div class="insight-item">
+                    <strong>Currency Performance Disparity:</strong> USD shows strong retention (31.2% average), while INR users face higher churn challenges. AUD, HKD, and several smaller currencies show excellent retention rates (50-100%).
+                </div>
+                <div class="insight-item">
+                    <strong>February Dip Analysis:</strong> February's retention drop to 14.54% affected all currencies, with INR dropping to 12.47% but USD maintaining 38.30%, suggesting market-specific factors influenced retention.
+                </div>
+                <div class="insight-item">
+                    <strong>Non-Retention Patterns:</strong> INR users account for 79.1% of all non-retained users (3,185 out of 3,495), highlighting the critical need for INR market retention strategies.
+                </div>
+                <div class="insight-item">
+                    <strong>Smaller Currency Success:</strong> Currencies like CHF, HKD, DKK, JPY, THB, ZAR, NGN, and SEK show exceptional retention rates (often 100%), though with smaller user bases.
+                </div>
+                <div class="insight-item">
+                    <strong>Google Play Dominance:</strong> Google Play leads with 55.6% of all retained users (533 users), aligning with the strong INR market presence where Android devices dominate.
+                </div>
+                <div class="insight-item">
+                    <strong>Strategic Opportunity:</strong> The 78.31% overall non-retention rate represents significant potential for growth through targeted retention initiatives, especially in the INR market.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Updated retention data from JSON files with non-retained data
+        const retentionData = [
+            { month: "January", users: 1213, retained: 215, non_retained: 998, retained_percentage: "17.72", non_retained_percentage: "82.28", inr_retained: 194, others_retained: 21, inr_non_retained: 966, others_non_retained: 32 },
+            { month: "February", users: 798, retained: 116, non_retained: 682, retained_percentage: "14.54", non_retained_percentage: "85.46", inr_retained: 90, others_retained: 26, inr_non_retained: 632, others_non_retained: 50 },
+            { month: "March", users: 960, retained: 236, non_retained: 724, retained_percentage: "24.58", non_retained_percentage: "75.42", inr_retained: 195, others_retained: 41, inr_non_retained: 645, others_non_retained: 79 },
+            { month: "April", users: 696, retained: 164, non_retained: 532, retained_percentage: "23.56", non_retained_percentage: "76.44", inr_retained: 136, others_retained: 28, inr_non_retained: 475, others_non_retained: 57 },
+            { month: "May", users: 778, retained: 219, non_retained: 559, retained_percentage: "28.15", non_retained_percentage: "71.85", inr_retained: 167, others_retained: 52, inr_non_retained: 467, others_non_retained: 92 }
+        ];
+
+        // Platform data from second JSON file
+        const platformData = {
+            "January": [
+                { platform: "stripe", retained_users: 101, retained_percentage: "8.33" },
+                { platform: "Google Play", retained_users: 65, retained_percentage: "5.36" },
+                { platform: "Apple", retained_users: 53, retained_percentage: "4.37" },
+                { platform: "google", retained_users: 1, retained_percentage: "0.08" },
+                { platform: "Razorpay-Courses", retained_users: 1, retained_percentage: "0.08" }
+            ],
+            "February": [
+                { platform: "Google Play", retained_users: 48, retained_percentage: "6.02" },
+                { platform: "stripe", retained_users: 40, retained_percentage: "5.01" },
+                { platform: "Apple", retained_users: 28, retained_percentage: "3.51" },
+                { platform: "razorpay-course", retained_users: 1, retained_percentage: "0.13" }
+            ],
+            "March": [
+                { platform: "Google Play", retained_users: 157, retained_percentage: "16.34" },
+                { platform: "Apple", retained_users: 53, retained_percentage: "5.52" },
+                { platform: "Stripe", retained_users: 25, retained_percentage: "2.60" },
+                { platform: "razorpay-course", retained_users: 1, retained_percentage: "0.10" }
+            ],
+            "April": [
+                { platform: "Google Play", retained_users: 118, retained_percentage: "16.93" },
+                { platform: "Apple", retained_users: 31, retained_percentage: "4.45" },
+                { platform: "Stripe", retained_users: 16, retained_percentage: "2.30" }
+            ],
+            "May": [
+                { platform: "Google Play", retained_users: 169, retained_percentage: "21.69" },
+                { platform: "Apple", retained_users: 50, retained_percentage: "6.42" }
+            ]
+        };
+
+        // Detailed currency data from first JSON file with both retained and non-retained
+        const detailedCurrencyData = {
+            "January": [
+                { currency: "INR", retained_users: 194, non_retained_users: 966, total_users: 1160, retained_percentage: "16.72", non_retained_percentage: "83.28" },
+                { currency: "USD", retained_users: 12, non_retained_users: 18, total_users: 30, retained_percentage: "40.00", non_retained_percentage: "60.00" },
+                { currency: "AUD", retained_users: 3, non_retained_users: 1, total_users: 4, retained_percentage: "75.00", non_retained_percentage: "25.00" },
+                { currency: "CAD", retained_users: 3, non_retained_users: 4, total_users: 7, retained_percentage: "42.86", non_retained_percentage: "57.14" },
+                { currency: "EUR", retained_users: 1, non_retained_users: 1, total_users: 2, retained_percentage: "50.00", non_retained_percentage: "50.00" },
+                { currency: "GBP", retained_users: 1, non_retained_users: 2, total_users: 3, retained_percentage: "33.33", non_retained_percentage: "66.67" },
+                { currency: "SGD", retained_users: 1, non_retained_users: 1, total_users: 2, retained_percentage: "50.00", non_retained_percentage: "50.00" }
+            ],
+            "February": [
+                { currency: "INR", retained_users: 90, non_retained_users: 632, total_users: 722, retained_percentage: "12.47", non_retained_percentage: "87.53" },
+                { currency: "USD", retained_users: 18, non_retained_users: 29, total_users: 47, retained_percentage: "38.30", non_retained_percentage: "61.70" },
+                { currency: "AUD", retained_users: 3, non_retained_users: 3, total_users: 6, retained_percentage: "50.00", non_retained_percentage: "50.00" },
+                { currency: "CAD", retained_users: 2, non_retained_users: 6, total_users: 8, retained_percentage: "25.00", non_retained_percentage: "75.00" },
+                { currency: "EUR", retained_users: 1, non_retained_users: 0, total_users: 1, retained_percentage: "100.00", non_retained_percentage: "0.00" },
+                { currency: "AED", retained_users: 1, non_retained_users: 2, total_users: 3, retained_percentage: "33.33", non_retained_percentage: "66.67" },
+                { currency: "QAR", retained_users: 1, non_retained_users: 2, total_users: 3, retained_percentage: "33.33", non_retained_percentage: "66.67" }
+            ],
+            "March": [
+                { currency: "INR", retained_users: 195, non_retained_users: 645, total_users: 840, retained_percentage: "23.21", non_retained_percentage: "76.79" },
+                { currency: "USD", retained_users: 18, non_retained_users: 44, total_users: 62, retained_percentage: "29.03", non_retained_percentage: "70.97" },
+                { currency: "CAD", retained_users: 6, non_retained_users: 8, total_users: 14, retained_percentage: "42.86", non_retained_percentage: "57.14" },
+                { currency: "AED", retained_users: 4, non_retained_users: 4, total_users: 8, retained_percentage: "50.00", non_retained_percentage: "50.00" },
+                { currency: "SGD", retained_users: 3, non_retained_users: 6, total_users: 9, retained_percentage: "33.33", non_retained_percentage: "66.67" },
+                { currency: "EUR", retained_users: 2, non_retained_users: 1, total_users: 3, retained_percentage: "66.67", non_retained_percentage: "33.33" },
+                { currency: "GBP", retained_users: 2, non_retained_users: 6, total_users: 8, retained_percentage: "25.00", non_retained_percentage: "75.00" },
+                { currency: "HKD", retained_users: 2, non_retained_users: 0, total_users: 2, retained_percentage: "100.00", non_retained_percentage: "0.00" },
+                { currency: "AUD", retained_users: 1, non_retained_users: 3, total_users: 4, retained_percentage: "25.00", non_retained_percentage: "75.00" },
+                { currency: "CHF", retained_users: 1, non_retained_users: 0, total_users: 1, retained_percentage: "100.00", non_retained_percentage: "0.00" },
+                { currency: "MYR", retained_users: 1, non_retained_users: 1, total_users: 2, retained_percentage: "50.00", non_retained_percentage: "50.00" },
+                { currency: "NZD", retained_users: 1, non_retained_users: 2, total_users: 3, retained_percentage: "33.33", non_retained_percentage: "66.67" }
+            ],
+            "April": [
+                { currency: "INR", retained_users: 136, non_retained_users: 475, total_users: 611, retained_percentage: "22.26", non_retained_percentage: "77.74" },
+                { currency: "USD", retained_users: 9, non_retained_users: 25, total_users: 34, retained_percentage: "26.47", non_retained_percentage: "73.53" },
+                { currency: "AED", retained_users: 4, non_retained_users: 3, total_users: 7, retained_percentage: "57.14", non_retained_percentage: "42.86" },
+                { currency: "GBP", retained_users: 3, non_retained_users: 4, total_users: 7, retained_percentage: "42.86", non_retained_percentage: "57.14" },
+                { currency: "HKD", retained_users: 3, non_retained_users: 0, total_users: 3, retained_percentage: "100.00", non_retained_percentage: "0.00" },
+                { currency: "SGD", retained_users: 3, non_retained_users: 4, total_users: 7, retained_percentage: "42.86", non_retained_percentage: "57.14" },
+                { currency: "AUD", retained_users: 1, non_retained_users: 1, total_users: 2, retained_percentage: "50.00", non_retained_percentage: "50.00" },
+                { currency: "DKK", retained_users: 1, non_retained_users: 0, total_users: 1, retained_percentage: "100.00", non_retained_percentage: "0.00" },
+                { currency: "JPY", retained_users: 1, non_retained_users: 0, total_users: 1, retained_percentage: "100.00", non_retained_percentage: "0.00" },
+                { currency: "MYR", retained_users: 1, non_retained_users: 3, total_users: 4, retained_percentage: "25.00", non_retained_percentage: "75.00" },
+                { currency: "THB", retained_users: 1, non_retained_users: 0, total_users: 1, retained_percentage: "100.00", non_retained_percentage: "0.00" },
+                { currency: "ZAR", retained_users: 1, non_retained_users: 0, total_users: 1, retained_percentage: "100.00", non_retained_percentage: "0.00" }
+            ],
+            "May": [
+                { currency: "INR", retained_users: 167, non_retained_users: 467, total_users: 634, retained_percentage: "26.34", non_retained_percentage: "73.66" },
+                { currency: "USD", retained_users: 13, non_retained_users: 32, total_users: 45, retained_percentage: "28.89", non_retained_percentage: "71.11" },
+                { currency: "GBP", retained_users: 11, non_retained_users: 19, total_users: 30, retained_percentage: "36.67", non_retained_percentage: "63.33" },
+                { currency: "EUR", retained_users: 6, non_retained_users: 10, total_users: 16, retained_percentage: "37.50", non_retained_percentage: "62.50" },
+                { currency: "CAD", retained_users: 5, non_retained_users: 9, total_users: 14, retained_percentage: "35.71", non_retained_percentage: "64.29" },
+                { currency: "MYR", retained_users: 5, non_retained_users: 1, total_users: 6, retained_percentage: "83.33", non_retained_percentage: "16.67" },
+                { currency: "SGD", retained_users: 3, non_retained_users: 1, total_users: 4, retained_percentage: "75.00", non_retained_percentage: "25.00" },
+                { currency: "AED", retained_users: 2, non_retained_users: 3, total_users: 5, retained_percentage: "40.00", non_retained_percentage: "60.00" },
+                { currency: "AUD", retained_users: 2, non_retained_users: 8, total_users: 10, retained_percentage: "20.00", non_retained_percentage: "80.00" },
+                { currency: "NZD", retained_users: 2, non_retained_users: 1, total_users: 3, retained_percentage: "66.67", non_retained_percentage: "33.33" },
+                { currency: "CHF", retained_users: 1, non_retained_users: 1, total_users: 2, retained_percentage: "50.00", non_retained_percentage: "50.00" },
+                { currency: "NGN", retained_users: 1, non_retained_users: 0, total_users: 1, retained_percentage: "100.00", non_retained_percentage: "0.00" },
+                { currency: "SEK", retained_users: 1, non_retained_users: 0, total_users: 1, retained_percentage: "100.00", non_retained_percentage: "0.00" }
+            ]
+        };
+
+        // State management for filters
+        let currentFilters = {
+            currency: 'all',
+            month: 'all'
+        };
+
+        // Chart instances
+        let currencyDistributionByMonthChart;
+        let topCurrenciesTrendChart;
+        let platformTrendChart;
+        let platformShareChart;
+        let platformPerformanceChart;
+
+        // Currency colors mapping
+        const currencyColors = {
+            'INR': '#10b981',
+            'USD': '#3b82f6',
+            'GBP': '#8b5cf6',
+            'EUR': '#f59e0b',
+            'CAD': '#ef4444',
+            'AUD': '#06b6d4',
+            'AED': '#ec4899',
+            'SGD': '#84cc16',
+            'HKD': '#6366f1',
+            'MYR': '#f97316',
+            'CHF': '#14b8a6',
+            'JPY': '#f43f5e',
+            'SEK': '#a855f7',
+            'NZD': '#22c55e',
+            'DKK': '#eab308',
+            'THB': '#06b6d4',
+            'ZAR': '#dc2626',
+            'QAR': '#7c3aed',
+            'NGN': '#059669'
+        };
+
+        // Platform colors mapping
+        const platformColors = {
+            'Google Play': '#4285f4',
+            'Apple': '#000000',
+            'stripe': '#635bff',
+            'Stripe': '#635bff',
+            'google': '#ea4335',
+            'Razorpay-Courses': '#3395ff',
+            'razorpay-course': '#3395ff'
+        };
+
+        function formatNumber(num) {
+            return num.toLocaleString();
+        }
+
+        function toggleTable(tableId) {
+            const table = document.getElementById(tableId);
+            const toggle = document.getElementById(tableId + 'Toggle');
+            
+            if (table.classList.contains('collapsed')) {
+                table.classList.remove('collapsed');
+                toggle.classList.remove('collapsed');
+                toggle.textContent = '▼';
+            } else {
+                table.classList.add('collapsed');
+                toggle.classList.add('collapsed');
+                toggle.textContent = '▲';
+            }
+        }
+
+        function getAllCurrencies() {
+            const currencies = new Set();
+            Object.values(detailedCurrencyData).forEach(monthData => {
+                monthData.forEach(item => currencies.add(item.currency));
+            });
+            return Array.from(currencies).sort();
+        }
+
+        function getTopCurrencies(limit = 8) {
+            const currencyTotals = {};
+            Object.values(detailedCurrencyData).forEach(monthData => {
+                monthData.forEach(item => {
+                    currencyTotals[item.currency] = (currencyTotals[item.currency] || 0) + item.total_users;
+                });
+            });
+            
+            return Object.entries(currencyTotals)
+                .sort(([,a], [,b]) => b - a)
+                .slice(0, limit)
+                .map(([currency]) => currency);
+        }
+
+        function getAllPlatforms() {
+            const platforms = new Set();
+            Object.values(platformData).forEach(monthData => {
+                monthData.forEach(item => {
+                    let platformName = item.platform;
+                    if (platformName.toLowerCase().includes('stripe')) {
+                        platformName = 'Stripe';
+                    } else if (platformName.toLowerCase().includes('razorpay')) {
+                        platformName = 'Razorpay';
+                    } else if (platformName.toLowerCase() === 'google') {
+                        platformName = 'Google';
+                    }
+                    platforms.add(platformName);
+                });
+            });
+            return Array.from(platforms).sort();
+        }
+
+        function normalizePlatformName(platform) {
+            if (platform.toLowerCase().includes('stripe')) {
+                return 'Stripe';
+            } else if (platform.toLowerCase().includes('razorpay')) {
+                return 'Razorpay';
+            } else if (platform.toLowerCase() === 'google') {
+                return 'Google';
+            }
+            return platform;
+        }
+
+        function getFilteredData() {
+            let data = { ...detailedCurrencyData };
+            
+            if (currentFilters.month !== 'all') {
+                data = { [currentFilters.month]: data[currentFilters.month] };
+            }
+            
+            if (currentFilters.currency !== 'all') {
+                Object.keys(data).forEach(month => {
+                    data[month] = data[month].filter(item => item.currency === currentFilters.currency);
+                });
+            }
+            
+            return data;
+        }
+
+        function initializeFilters() {
+            const currencyFiltersContainer = document.getElementById('currencyFilters');
+            const monthFiltersContainer = document.getElementById('monthFilters');
+            
+            const allCurrencies = getAllCurrencies();
+            allCurrencies.forEach(currency => {
+                const btn = document.createElement('button');
+                btn.className = 'filter-btn';
+                btn.setAttribute('data-currency', currency);
+                btn.textContent = currency;
+                btn.addEventListener('click', () => updateCurrencyFilter(currency));
+                currencyFiltersContainer.appendChild(btn);
+            });
+            
+            monthFiltersContainer.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const month = btn.getAttribute('data-month');
+                    updateMonthFilter(month);
+                });
+            });
+            
+            currencyFiltersContainer.querySelector('[data-currency="all"]').addEventListener('click', () => updateCurrencyFilter('all'));
+        }
+
+        function updateCurrencyFilter(currency) {
+            currentFilters.currency = currency;
+            
+            document.querySelectorAll('[data-currency]').forEach(btn => {
+                btn.classList.toggle('active', btn.getAttribute('data-currency') === currency);
+            });
+            
+            updateCharts();
+        }
+
+        function updateMonthFilter(month) {
+            currentFilters.month = month;
+            
+            document.querySelectorAll('[data-month]').forEach(btn => {
+                btn.classList.toggle('active', btn.getAttribute('data-month') === month);
+            });
+            
+            updateCharts();
+        }
+
+        function createRetentionRateChart() {
+            const ctx = document.getElementById('retentionRateChart').getContext('2d');
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: retentionData.map(d => d.month),
+                    datasets: [{
+                        label: 'Retention Rate %',
+                        data: retentionData.map(d => parseFloat(d.retained_percentage)),
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        borderWidth: 4,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#10b981',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 3,
+                        pointRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 35,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(16, 185, 129, 0.1)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createVolumeComparisonChart() {
+            const ctx = document.getElementById('volumeComparisonChart').getContext('2d');
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: retentionData.map(d => d.month),
+                    datasets: [{
+                        label: 'Total Users',
+                        data: retentionData.map(d => d.users),
+                        backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                        borderColor: '#3b82f6',
+                        borderWidth: 1
+                    }, {
+                        label: 'Retained Users',
+                        data: retentionData.map(d => d.retained),
+                        backgroundColor: 'rgba(16, 185, 129, 0.8)',
+                        borderColor: '#10b981',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return formatNumber(value);
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(16, 185, 129, 0.1)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createRetentionComparisonChart() {
+            const ctx = document.getElementById('retentionComparisonChart').getContext('2d');
+            
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Retained', 'Non-Retained'],
+                    datasets: [{
+                        data: [
+                            retentionData.reduce((sum, d) => sum + d.retained, 0),
+                            retentionData.reduce((sum, d) => sum + d.non_retained, 0)
+                        ],
+                        backgroundColor: ['rgba(16, 185, 129, 0.8)', 'rgba(239, 68, 68, 0.8)'],
+                        borderColor: ['#10b981', '#ef4444'],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { 
+                            position: 'bottom',
+                            labels: {
+                                generateLabels: function(chart) {
+                                    const totalRetained = retentionData.reduce((sum, d) => sum + d.retained, 0);
+                                    const totalNonRetained = retentionData.reduce((sum, d) => sum + d.non_retained, 0);
+                                    const totalUsers = totalRetained + totalNonRetained;
+                                    const retainedPercentage = ((totalRetained / totalUsers) * 100).toFixed(1);
+                                    const nonRetainedPercentage = ((totalNonRetained / totalUsers) * 100).toFixed(1);
+                                    
+                                    return [
+                                        {
+                                            text: `Retained (${formatNumber(totalRetained)} - ${retainedPercentage}%)`,
+                                            fillStyle: 'rgba(16, 185, 129, 0.8)',
+                                            strokeStyle: '#10b981',
+                                            lineWidth: 2,
+                                            index: 0
+                                        },
+                                        {
+                                            text: `Non-Retained (${formatNumber(totalNonRetained)} - ${nonRetainedPercentage}%)`,
+                                            fillStyle: 'rgba(239, 68, 68, 0.8)',
+                                            strokeStyle: '#ef4444',
+                                            lineWidth: 2,
+                                            index: 1
+                                        }
+                                    ];
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const total = retentionData.reduce((sum, d) => sum + d.retained + d.non_retained, 0);
+                                    const value = context.dataIndex === 0 ? 
+                                        retentionData.reduce((sum, d) => sum + d.retained, 0) :
+                                        retentionData.reduce((sum, d) => sum + d.non_retained, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return context.label + ': ' + formatNumber(value) + ` users (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createCurrencyDistributionByMonthChart() {
+            const ctx = document.getElementById('currencyDistributionByMonthChart').getContext('2d');
+            
+            currencyDistributionByMonthChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        data: [],
+                        backgroundColor: []
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                generateLabels: function(chart) {
+                                    const data = chart.data;
+                                    if (data.labels.length && data.datasets.length) {
+                                        return data.labels.map((label, i) => {
+                                            const value = data.datasets[0].data[i];
+                                            return {
+                                                text: `${label} (${formatNumber(value)})`,
+                                                fillStyle: data.datasets[0].backgroundColor[i],
+                                                strokeStyle: data.datasets[0].backgroundColor[i],
+                                                lineWidth: 0,
+                                                index: i
+                                            };
+                                        });
+                                    }
+                                    return [];
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.label + ': ' + formatNumber(context.parsed) + ' users';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            updateCurrencyDistributionByMonthChart();
+        }
+
+        function updateCurrencyDistributionByMonthChart() {
+            const filteredData = getFilteredData();
+            const aggregatedData = {};
+            
+            Object.values(filteredData).forEach(monthData => {
+                monthData.forEach(item => {
+                    aggregatedData[item.currency] = (aggregatedData[item.currency] || 0) + item.retained_users;
+                });
+            });
+            
+            const labels = Object.keys(aggregatedData);
+            const data = Object.values(aggregatedData);
+            const colors = labels.map(currency => currencyColors[currency] || '#9ca3af');
+            
+            currencyDistributionByMonthChart.data.labels = labels;
+            currencyDistributionByMonthChart.data.datasets[0].data = data;
+            currencyDistributionByMonthChart.data.datasets[0].backgroundColor = colors;
+            currencyDistributionByMonthChart.update();
+        }
+
+        function createTopCurrenciesTrendChart() {
+            const ctx = document.getElementById('topCurrenciesTrendChart').getContext('2d');
+            const topCurrencies = getTopCurrencies(5);
+            
+            const datasets = topCurrencies.map(currency => ({
+                label: currency,
+                data: [],
+                borderColor: currencyColors[currency] || '#9ca3af',
+                backgroundColor: (currencyColors[currency] || '#9ca3af') + '20',
+                borderWidth: 3,
+                fill: false,
+                tension: 0.4
+            }));
+            
+            topCurrenciesTrendChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['January', 'February', 'March', 'April', 'May'],
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                generateLabels: function(chart) {
+                                    const original = Chart.defaults.plugins.legend.labels.generateLabels;
+                                    const labels = original.call(this, chart);
+                                    
+                                    return labels.map((label, index) => {
+                                        const dataset = chart.data.datasets[index];
+                                        if (dataset && dataset.data.length > 0) {
+                                            const total = dataset.data.reduce((sum, value) => sum + (value || 0), 0);
+                                            label.text = `${label.text} (${formatNumber(total)})`;
+                                        }
+                                        return label;
+                                    });
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return formatNumber(value);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            updateTopCurrenciesTrendChart();
+        }
+
+        function updateTopCurrenciesTrendChart() {
+            const filteredData = getFilteredData();
+            const months = ['January', 'February', 'March', 'April', 'May'];
+            
+            if (currentFilters.month !== 'all') {
+                topCurrenciesTrendChart.config.type = 'bar';
+                const monthData = filteredData[currentFilters.month] || [];
+                
+                topCurrenciesTrendChart.data.labels = monthData.map(item => item.currency);
+                topCurrenciesTrendChart.data.datasets = [{
+                    label: 'Retained Users',
+                    data: monthData.map(item => item.retained_users),
+                    backgroundColor: monthData.map(item => currencyColors[item.currency] || '#9ca3af'),
+                    borderWidth: 1
+                }];
+                
+                topCurrenciesTrendChart.options.plugins.legend.labels.generateLabels = function(chart) {
+                    const data = chart.data;
+                    if (data.labels.length && data.datasets.length) {
+                        return data.labels.map((label, i) => {
+                            const value = data.datasets[0].data[i];
+                            return {
+                                text: `${label} (${formatNumber(value)})`,
+                                fillStyle: data.datasets[0].backgroundColor[i],
+                                strokeStyle: data.datasets[0].backgroundColor[i],
+                                lineWidth: 0,
+                                index: i
+                            };
+                        });
+                    }
+                    return [];
+                };
+            } else {
+                topCurrenciesTrendChart.config.type = 'line';
+                
+                const currencyTotals = {};
+                Object.values(detailedCurrencyData).forEach(monthData => {
+                    monthData.forEach(item => {
+                        currencyTotals[item.currency] = (currencyTotals[item.currency] || 0) + item.total_users;
+                    });
+                });
+                
+                const topCurrencies = Object.entries(currencyTotals)
+                    .sort(([,a], [,b]) => b - a)
+                    .slice(0, 5)
+                    .map(([currency]) => currency);
+                
+                topCurrenciesTrendChart.data.labels = months;
+                topCurrenciesTrendChart.data.datasets = topCurrencies.map(currency => {
+                    const data = months.map(month => {
+                        const monthData = detailedCurrencyData[month] || [];
+                        const currencyItem = monthData.find(item => item.currency === currency);
+                        return currencyItem ? currencyItem.retained_users : 0;
+                    });
+                    
+                    return {
+                        label: currency,
+                        data: data,
+                        borderColor: currencyColors[currency] || '#9ca3af',
+                        backgroundColor: (currencyColors[currency] || '#9ca3af') + '20',
+                        borderWidth: 3,
+                        fill: false,
+                        tension: 0.4
+                    };
+                });
+                
+                topCurrenciesTrendChart.options.plugins.legend.labels.generateLabels = function(chart) {
+                    const original = Chart.defaults.plugins.legend.labels.generateLabels;
+                    const labels = original.call(this, chart);
+                    
+                    return labels.map((label, index) => {
+                        const dataset = chart.data.datasets[index];
+                        if (dataset && dataset.data.length > 0) {
+                            const total = dataset.data.reduce((sum, value) => sum + (value || 0), 0);
+                            label.text = `${label.text} (${formatNumber(total)})`;
+                        }
+                        return label;
+                    });
+                };
+            }
+            
+            topCurrenciesTrendChart.update();
+        }
+
+        function createCurrencyRetentionRatesChart() {
+            const ctx = document.getElementById('currencyRetentionRatesChart').getContext('2d');
+            
+            const currencyTotals = {};
+            Object.values(detailedCurrencyData).forEach(monthData => {
+                monthData.forEach(item => {
+                    currencyTotals[item.currency] = (currencyTotals[item.currency] || 0) + item.total_users;
+                });
+            });
+            
+            const topCurrencies = Object.entries(currencyTotals)
+                .sort(([,a], [,b]) => b - a)
+                .slice(0, 8)
+                .map(([currency]) => currency);
+            
+            const currencyRetentionRates = {};
+            topCurrencies.forEach(currency => {
+                let totalUsers = 0;
+                let totalRetained = 0;
+                
+                Object.values(detailedCurrencyData).forEach(monthData => {
+                    const currencyData = monthData.find(item => item.currency === currency);
+                    if (currencyData) {
+                        totalUsers += currencyData.total_users;
+                        totalRetained += currencyData.retained_users;
+                    }
+                });
+                
+                currencyRetentionRates[currency] = totalUsers > 0 ? (totalRetained / totalUsers) * 100 : 0;
+            });
+            
+            const labels = Object.keys(currencyRetentionRates);
+            const data = Object.values(currencyRetentionRates);
+            const colors = labels.map(currency => currencyColors[currency] || '#9ca3af');
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Retention Rate %',
+                        data: data,
+                        backgroundColor: colors,
+                        borderColor: colors,
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.label + ': ' + context.parsed.y.toFixed(1) + '%';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createNonRetainedByCurrencyChart() {
+            const ctx = document.getElementById('nonRetainedByCurrencyChart').getContext('2d');
+            const months = ['January', 'February', 'March', 'April', 'May'];
+            
+            const currencyNonRetainedTotals = {};
+            Object.values(detailedCurrencyData).forEach(monthData => {
+                monthData.forEach(item => {
+                    currencyNonRetainedTotals[item.currency] = (currencyNonRetainedTotals[item.currency] || 0) + item.non_retained_users;
+                });
+            });
+            
+            const topNonRetainedCurrencies = Object.entries(currencyNonRetainedTotals)
+                .sort(([,a], [,b]) => b - a)
+                .slice(0, 5)
+                .map(([currency]) => currency);
+            
+            const datasets = topNonRetainedCurrencies.map(currency => {
+                const data = months.map(month => {
+                    const monthData = detailedCurrencyData[month] || [];
+                    const currencyItem = monthData.find(item => item.currency === currency);
+                    return currencyItem ? currencyItem.non_retained_users : 0;
+                });
+                
+                return {
+                    label: currency,
+                    data: data,
+                    borderColor: currencyColors[currency] || '#9ca3af',
+                    backgroundColor: (currencyColors[currency] || '#9ca3af') + '20',
+                    borderWidth: 3,
+                    fill: false,
+                    tension: 0.4
+                };
+            });
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                generateLabels: function(chart) {
+                                    const original = Chart.defaults.plugins.legend.labels.generateLabels;
+                                    const labels = original.call(this, chart);
+                                    
+                                    return labels.map((label, index) => {
+                                        const dataset = chart.data.datasets[index];
+                                        if (dataset && dataset.data.length > 0) {
+                                            const total = dataset.data.reduce((sum, value) => sum + (value || 0), 0);
+                                            label.text = `${label.text} (${formatNumber(total)})`;
+                                        }
+                                        return label;
+                                    });
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return formatNumber(value);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createRetentionRateTrendsChart() {
+            const ctx = document.getElementById('retentionRateTrendsChart').getContext('2d');
+            const months = ['January', 'February', 'March', 'April', 'May'];
+            
+            const currencyTotals = {};
+            Object.values(detailedCurrencyData).forEach(monthData => {
+                monthData.forEach(item => {
+                    currencyTotals[item.currency] = (currencyTotals[item.currency] || 0) + item.total_users;
+                });
+            });
+            
+            const topCurrencies = Object.entries(currencyTotals)
+                .sort(([,a], [,b]) => b - a)
+                .slice(0, 5)
+                .map(([currency]) => currency);
+            
+            const datasets = topCurrencies.map(currency => {
+                const data = months.map(month => {
+                    const monthData = detailedCurrencyData[month] || [];
+                    const currencyItem = monthData.find(item => item.currency === currency);
+                    return currencyItem ? parseFloat(currencyItem.retained_percentage) : 0;
+                });
+                
+                return {
+                    label: currency,
+                    data: data,
+                    borderColor: currencyColors[currency] || '#9ca3af',
+                    backgroundColor: (currencyColors[currency] || '#9ca3af') + '20',
+                    borderWidth: 3,
+                    fill: false,
+                    tension: 0.4
+                };
+            });
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createPlatformTrendChart() {
+            const ctx = document.getElementById('platformTrendChart').getContext('2d');
+            const months = ['January', 'February', 'March', 'April', 'May'];
+            const platforms = getAllPlatforms();
+            
+            const datasets = platforms.map(platform => {
+                const data = months.map(month => {
+                    const monthData = platformData[month] || [];
+                    const platformItem = monthData.find(item => normalizePlatformName(item.platform) === platform);
+                    return platformItem ? platformItem.retained_users : 0;
+                });
+                
+                return {
+                    label: platform,
+                    data: data,
+                    borderColor: platformColors[platform] || '#9ca3af',
+                    backgroundColor: (platformColors[platform] || '#9ca3af') + '20',
+                    borderWidth: 3,
+                    fill: false,
+                    tension: 0.4
+                };
+            });
+            
+            platformTrendChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                generateLabels: function(chart) {
+                                    const original = Chart.defaults.plugins.legend.labels.generateLabels;
+                                    const labels = original.call(this, chart);
+                                    
+                                    return labels.map((label, index) => {
+                                        const dataset = chart.data.datasets[index];
+                                        if (dataset && dataset.data.length > 0) {
+                                            const total = dataset.data.reduce((sum, value) => sum + (value || 0), 0);
+                                            label.text = `${label.text} (${formatNumber(total)})`;
+                                        }
+                                        return label;
+                                    });
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return formatNumber(value);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createPlatformShareChart() {
+            const ctx = document.getElementById('platformShareChart').getContext('2d');
+            
+            const platformTotals = {};
+            Object.values(platformData).forEach(monthData => {
+                monthData.forEach(item => {
+                    const platform = normalizePlatformName(item.platform);
+                    platformTotals[platform] = (platformTotals[platform] || 0) + item.retained_users;
+                });
+            });
+            
+            const labels = Object.keys(platformTotals);
+            const data = Object.values(platformTotals);
+            const colors = labels.map(platform => platformColors[platform] || '#9ca3af');
+            
+            platformShareChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: colors
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                generateLabels: function(chart) {
+                                    const data = chart.data;
+                                    if (data.labels.length && data.datasets.length) {
+                                        const total = data.datasets[0].data.reduce((sum, value) => sum + value, 0);
+                                        return data.labels.map((label, i) => {
+                                            const value = data.datasets[0].data[i];
+                                            const percentage = ((value / total) * 100).toFixed(1);
+                                            return {
+                                                text: `${label} (${formatNumber(value)} - ${percentage}%)`,
+                                                fillStyle: data.datasets[0].backgroundColor[i],
+                                                strokeStyle: data.datasets[0].backgroundColor[i],
+                                                lineWidth: 0,
+                                                index: i
+                                            };
+                                        });
+                                    }
+                                    return [];
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const total = context.dataset.data.reduce((sum, value) => sum + value, 0);
+                                    const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                    return context.label + ': ' + formatNumber(context.parsed) + ` users (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createPlatformPerformanceChart() {
+            const ctx = document.getElementById('platformPerformanceChart').getContext('2d');
+            const months = ['January', 'February', 'March', 'April', 'May'];
+            
+            const allPlatforms = new Set();
+            Object.values(platformData).forEach(monthData => {
+                monthData.forEach(item => allPlatforms.add(normalizePlatformName(item.platform)));
+            });
+            
+            const datasets = Array.from(allPlatforms).map(platform => {
+                const data = months.map(month => {
+                    const monthData = platformData[month] || [];
+                    const platformItem = monthData.find(item => normalizePlatformName(item.platform) === platform);
+                    return platformItem ? platformItem.retained_users : 0;
+                });
+                
+                return {
+                    label: platform,
+                    data: data,
+                    backgroundColor: platformColors[platform] || '#9ca3af',
+                    borderColor: platformColors[platform] || '#9ca3af',
+                    borderWidth: 1
+                };
+            });
+            
+            platformPerformanceChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: months,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                generateLabels: function(chart) {
+                                    const original = Chart.defaults.plugins.legend.labels.generateLabels;
+                                    const labels = original.call(this, chart);
+                                    
+                                    return labels.map((label, index) => {
+                                        const dataset = chart.data.datasets[index];
+                                        if (dataset && dataset.data.length > 0) {
+                                            const total = dataset.data.reduce((sum, value) => sum + (value || 0), 0);
+                                            label.text = `${label.text} (${formatNumber(total)})`;
+                                        }
+                                        return label;
+                                    });
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            stacked: false,
+                            grid: {
+                                display: false
+                            }
+                        },
+                        y: {
+                            stacked: false,
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return formatNumber(value);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateCharts() {
+            updateCurrencyDistributionByMonthChart();
+            updateTopCurrenciesTrendChart();
+        }
+
+        function populateRetentionAnalysisTable() {
+            const tableBody = document.getElementById('retentionAnalysisTableBody');
+            
+            Object.keys(detailedCurrencyData).forEach(month => {
+                const currencies = detailedCurrencyData[month];
+                currencies.forEach((currencyData, index) => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="month-col">${index === 0 ? month + ' 2025' : ''}</td>
+                        <td class="month-col">${currencyData.currency}</td>
+                        <td class="number-col">${formatNumber(currencyData.total_users)}</td>
+                        <td class="number-col">${formatNumber(currencyData.retained_users)}</td>
+                        <td class="number-col">${formatNumber(currencyData.non_retained_users)}</td>
+                        <td class="number-col percentage-col">${currencyData.retained_percentage}%</td>
+                        <td class="number-col">${currencyData.non_retained_percentage}%</td>
+                    `;
+                    tableBody.appendChild(tr);
+                });
+            });
+        }
+
+        function populateRetentionTable() {
+            const tableBody = document.getElementById('retentionTableBody');
+            
+            retentionData.forEach(row => {
+                const inrPercentage = ((row.inr_retained / row.retained) * 100).toFixed(1);
+                const othersPercentage = ((row.others_retained / row.retained) * 100).toFixed(1);
+                const inrNonRetainedPercentage = ((row.inr_non_retained / row.non_retained) * 100).toFixed(1);
+                const othersNonRetainedPercentage = ((row.others_non_retained / row.non_retained) * 100).toFixed(1);
+                
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="month-col">${row.month} 2025</td>
+                    <td class="number-col">${formatNumber(row.users)}</td>
+                    <td class="number-col">${formatNumber(row.retained)}</td>
+                    <td class="number-col percentage-col">${row.retained_percentage}%</td>
+                    <td class="number-col">${formatNumber(row.inr_retained)} <span class="percentage-col">(${inrPercentage}%)</span></td>
+                    <td class="number-col">${formatNumber(row.others_retained)} <span class="percentage-col">(${othersPercentage}%)</span></td>
+                    <td class="number-col">${formatNumber(row.inr_non_retained)} <span style="color: #ef4444; font-size: 12px;">(${inrNonRetainedPercentage}%)</span></td>
+                    <td class="number-col">${formatNumber(row.others_non_retained)} <span style="color: #ef4444; font-size: 12px;">(${othersNonRetainedPercentage}%)</span></td>
+                `;
+                tableBody.appendChild(tr);
+            });
+        }
+
+        function populateCurrencyTable() {
+            const tableBody = document.getElementById('currencyTableBody');
+            
+            Object.keys(detailedCurrencyData).forEach(month => {
+                const currencies = detailedCurrencyData[month];
+                currencies.forEach((currencyData, index) => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="month-col">${index === 0 ? month + ' 2025' : ''}</td>
+                        <td class="number-col">${currencyData.currency}</td>
+                        <td class="number-col">${formatNumber(currencyData.retained_users)} <span style="color: #64748b; font-size: 12px;">(${currencyData.retained_percentage}%)</span></td>
+                        <td class="number-col">${formatNumber(currencyData.total_users - currencyData.retained_users)} <span style="color: #64748b; font-size: 12px;">(${currencyData.non_retained_percentage}%)</span></td>
+                    `;
+                    tableBody.appendChild(tr);
+                });
+            });
+        }
+
+        function populatePlatformTable() {
+            const tableBody = document.getElementById('platformTableBody');
+            
+            Object.keys(platformData).forEach(month => {
+                const platforms = platformData[month];
+                const monthTotal = platforms.reduce((sum, p) => sum + p.retained_users, 0);
+                
+                platforms.forEach((platformInfo, index) => {
+                    const platformShare = ((platformInfo.retained_users / monthTotal) * 100).toFixed(1);
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="month-col">${index === 0 ? month + ' 2025' : ''}</td>
+                        <td class="number-col">${platformInfo.platform}</td>
+                        <td class="number-col">${formatNumber(platformInfo.retained_users)}</td>
+                        <td class="number-col percentage-col">${platformInfo.retained_percentage}%</td>
+                        <td class="number-col percentage-col">${platformShare}%</td>
+                    `;
+                    tableBody.appendChild(tr);
+                });
+            });
+        }
+
+        // Initialize dashboard
+        populateRetentionTable();
+        populateCurrencyTable();
+        populatePlatformTable();
+        populateRetentionAnalysisTable();
+        initializeFilters();
+        
+        setTimeout(() => {
+            createRetentionRateChart();
+            createVolumeComparisonChart();
+            createRetentionComparisonChart();
+            createCurrencyDistributionByMonthChart();
+            createTopCurrenciesTrendChart();
+            createCurrencyRetentionRatesChart();
+            createNonRetainedByCurrencyChart();
+            createRetentionRateTrendsChart();
+            createPlatformTrendChart();
+            createPlatformShareChart();
+            createPlatformPerformanceChart();
+        }, 100);
+    </script>
+</body>
+</html>

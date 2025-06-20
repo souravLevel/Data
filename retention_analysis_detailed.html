@@ -1,0 +1,1324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detailed Retention Analysis Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #1e293b;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 32px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .header h1 {
+            font-size: 36px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 12px;
+        }
+        .header p {
+            color: #64748b;
+            font-size: 18px;
+            font-weight: 500;
+        }
+        .header .period {
+            color: #059669;
+            font-weight: 600;
+            font-size: 16px;
+            margin-top: 8px;
+        }
+        
+        /* Executive Summary */
+        .executive-summary {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 32px;
+            margin-bottom: 32px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .summary-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 24px;
+        }
+        .summary-metric {
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-radius: 16px;
+            border-left: 5px solid;
+        }
+        .summary-metric.primary { border-left-color: #10b981; }
+        .summary-metric.secondary { border-left-color: #3b82f6; }
+        .summary-metric.accent { border-left-color: #8b5cf6; }
+        .summary-metric.warning { border-left-color: #f59e0b; }
+        .summary-metric h3 {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #64748b;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        .summary-metric .value {
+            font-size: 32px;
+            font-weight: 800;
+            font-family: 'SF Mono', Monaco, 'Consolas', monospace;
+            margin-bottom: 4px;
+        }
+        .summary-metric .trend {
+            font-size: 12px;
+            color: #64748b;
+        }
+        
+        /* Charts Section */
+        .charts-section {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+        .chart-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 32px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .chart-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 24px;
+            color: #1e293b;
+            text-align: center;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 12px;
+        }
+        .chart-wrapper {
+            position: relative;
+            height: 400px;
+        }
+        .chart-wrapper.small {
+            height: 300px;
+        }
+        
+        /* Multi-chart grids */
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+        
+        /* Device & Geography Section */
+        .device-geo-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+        
+        /* Usage Analytics */
+        .usage-analytics {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 32px;
+            margin-bottom: 32px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .usage-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }
+        .usage-card {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-radius: 16px;
+            padding: 24px;
+            border-left: 5px solid #10b981;
+        }
+        .usage-card h4 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 16px;
+        }
+        .usage-stat {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .usage-stat:last-child {
+            border-bottom: none;
+        }
+        .usage-stat .label {
+            color: #64748b;
+            font-size: 14px;
+        }
+        .usage-stat .value {
+            font-weight: 600;
+            color: #1e293b;
+            font-family: 'SF Mono', Monaco, 'Consolas', monospace;
+        }
+        
+        /* Chart Data Tables */
+        .chart-data-table {
+            margin-top: 20px;
+            background: rgba(248, 250, 252, 0.8);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .chart-data-table table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+        .chart-data-table th {
+            background: rgba(16, 185, 129, 0.1);
+            padding: 8px 12px;
+            font-weight: 600;
+            color: #065f46;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .chart-data-table td {
+            padding: 6px 12px;
+            border-bottom: 1px solid rgba(226, 232, 240, 0.5);
+        }
+        .chart-data-table tr:hover {
+            background: rgba(16, 185, 129, 0.05);
+        }
+        
+        /* Detailed Tables */
+        .detailed-tables {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 32px;
+            margin-bottom: 32px;
+        }
+        .table-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .table-header {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 24px 32px;
+            font-size: 20px;
+            font-weight: 700;
+        }
+        .table-scroll {
+            overflow-x: auto;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 16px 20px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 14px;
+        }
+        th {
+            background: rgba(16, 185, 129, 0.05);
+            font-weight: 700;
+            color: #065f46;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        tr:hover {
+            background: rgba(16, 185, 129, 0.05);
+        }
+        .number-col {
+            text-align: right;
+            font-family: 'SF Mono', Monaco, 'Consolas', monospace;
+        }
+        .percentage-col {
+            font-weight: 700;
+            color: #059669;
+        }
+        .status-active {
+            background: #dcfce7;
+            color: #166534;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .status-expired {
+            background: #fef2f2;
+            color: #991b1b;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .device-tag {
+            background: #dbeafe;
+            color: #1d4ed8;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .goal-tag {
+            background: #fef3c7;
+            color: #92400e;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        
+        /* Insights Panel */
+        .insights-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 32px;
+            margin-bottom: 32px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .insights-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 24px;
+        }
+        .insight-card {
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            border-radius: 16px;
+            padding: 24px;
+            border-left: 5px solid #10b981;
+        }
+        .insight-card h4 {
+            font-size: 18px;
+            font-weight: 700;
+            color: #065f46;
+            margin-bottom: 16px;
+        }
+        .insight-list {
+            list-style: none;
+        }
+        .insight-list li {
+            padding: 8px 0;
+            color: #374151;
+            border-bottom: 1px solid rgba(16, 185, 129, 0.2);
+            position: relative;
+            padding-left: 20px;
+        }
+        .insight-list li:before {
+            content: "→";
+            color: #10b981;
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+        }
+        .insight-list li:last-child {
+            border-bottom: none;
+        }
+        
+        /* Sample Users Section */
+        .sample-users {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 32px;
+            margin-bottom: 32px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .user-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .user-card {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+        }
+        .user-card .user-name {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 12px;
+        }
+        .user-stat {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            font-size: 13px;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .charts-section {
+                grid-template-columns: 1fr;
+            }
+            .device-geo-section {
+                grid-template-columns: 1fr;
+            }
+        }
+        @media (max-width: 768px) {
+            .container {
+                padding: 12px;
+            }
+            .header {
+                padding: 24px;
+            }
+            .header h1 {
+                font-size: 28px;
+            }
+            .summary-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .analytics-grid {
+                grid-template-columns: 1fr;
+            }
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+            .chart-wrapper {
+                height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>Advanced Retention Analytics</h1>
+            <p>Comprehensive analysis of user retention patterns, behavioral insights, and revenue impact</p>
+            <div class="period">Analysis Period: January 2025 - May 2025</div>
+        </div>
+
+        <!-- Executive Summary -->
+        <div class="executive-summary">
+            <div class="summary-title">Executive Summary</div>
+            <div class="summary-grid">
+                <div class="summary-metric primary">
+                    <h3>Overall Retention Rate</h3>
+                    <div class="value" style="color: #059669;">26.92%</div>
+                    <div class="trend">Trending upward</div>
+                </div>
+                <div class="summary-metric secondary">
+                    <h3>Total Users Analyzed</h3>
+                    <div class="value" style="color: #3b82f6;">2,415</div>
+                    <div class="trend">5-month period</div>
+                </div>
+                <div class="summary-metric accent">
+                    <h3>Total Retained Users</h3>
+                    <div class="value" style="color: #8b5cf6;">649</div>
+                    <div class="trend">26.9% of total</div>
+                </div>
+                <div class="summary-metric warning">
+                    <h3>Peak Retention Month</h3>
+                    <div class="value" style="color: #f59e0b;">January</div>
+                    <div class="trend">32.39% rate</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Charts -->
+        <div class="charts-section">
+            <div class="chart-container">
+                <div class="chart-title">📈 Retention Rate Trends & Volume Analysis</div>
+                <div class="chart-wrapper">
+                    <canvas id="combinedTrendChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title">📱 Device Distribution</div>
+                <div class="chart-wrapper small">
+                    <canvas id="deviceDistributionChart"></canvas>
+                </div>
+                <div class="chart-data-table">
+                    <table id="deviceDataTable">
+                        <thead>
+                            <tr>
+                                <th>Device Type</th>
+                                <th class="number-col">Count</th>
+                                <th class="number-col">Percentage</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analytics Grid -->
+        <div class="analytics-grid">
+            <div class="chart-container">
+                <div class="chart-title">👥 User Engagement Levels by Month</div>
+                <div class="chart-wrapper small">
+                    <canvas id="engagementChart"></canvas>
+                </div>
+                <div class="chart-data-table">
+                    <table id="engagementDataTable">
+                        <thead>
+                            <tr>
+                                <th>Month</th>
+                                <th class="number-col">Heavy</th>
+                                <th class="number-col">Moderate</th>
+                                <th class="number-col">Light</th>
+                                <th class="number-col">Inactive</th>
+                                <th class="number-col">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title">🎯 Goal Distribution</div>
+                <div class="chart-wrapper small">
+                    <canvas id="goalChart"></canvas>
+                </div>
+                <div class="chart-data-table">
+                    <table id="goalDataTable">
+                        <thead>
+                            <tr>
+                                <th>Goal</th>
+                                <th class="number-col">Count</th>
+                                <th class="number-col">Percentage</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Device & Geography -->
+        <div class="device-geo-section">
+            <div class="chart-container">
+                <div class="chart-title">📊 Device Usage Trends</div>
+                <div class="chart-wrapper small">
+                    <canvas id="deviceTrendChart"></canvas>
+                </div>
+                <div class="chart-data-table">
+                    <table id="deviceTrendDataTable">
+                        <thead>
+                            <tr>
+                                <th>Month</th>
+                                <th class="number-col">Android (Type 1)</th>
+                                <th class="number-col">iOS (Type 2)</th>
+                                <th class="number-col">Other</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title">🌍 Geographic Distribution</div>
+                <div class="chart-wrapper small">
+                    <canvas id="geoChart"></canvas>
+                </div>
+                <div class="chart-data-table">
+                    <table id="geoDataTable">
+                        <thead>
+                            <tr>
+                                <th>Region</th>
+                                <th class="number-col">Users</th>
+                                <th class="number-col">Percentage</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title">⏱️ Usage Time Distribution</div>
+                <div class="chart-wrapper small">
+                    <canvas id="usageTimeChart"></canvas>
+                </div>
+                <div class="chart-data-table">
+                    <table id="usageTimeDataTable">
+                        <thead>
+                            <tr>
+                                <th>Month</th>
+                                <th class="number-col">Avg Usage (min)</th>
+                                <th class="number-col">Total Users</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Usage Analytics -->
+        <div class="usage-analytics">
+            <div class="chart-title">📊 Detailed Usage Analytics</div>
+            <div class="usage-grid" id="usageAnalyticsGrid">
+            </div>
+        </div>
+
+        <!-- Detailed Tables -->
+        <div class="detailed-tables">
+            <div class="table-container">
+                <div class="table-header">📋 Comprehensive Monthly Analytics</div>
+                <div class="table-scroll">
+                    <table id="monthlyAnalyticsTable">
+                        <thead></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sample Retained Users -->
+        <div class="sample-users">
+            <div class="chart-title">👥 Sample Retained Users Profile</div>
+            <div class="user-cards" id="sampleUsersGrid">
+            </div>
+        </div>
+
+        <!-- Insights Panel -->
+        <div class="insights-panel">
+            <div class="chart-title">💡 Strategic Insights & Recommendations</div>
+            <div class="insights-grid" id="strategicInsights">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const retentionData = {
+            "start_date": "2025-01-01",
+            "end_date": "2025-05-31",
+            "data": [
+                {"month": "January", "users": 71, "retained": 23, "retained_percentage": "32.39"},
+                {"month": "February", "users": 254, "retained": 49, "retained_percentage": "19.29"},
+                {"month": "March", "users": 822, "retained": 209, "retained_percentage": "25.43"},
+                {"month": "April", "users": 585, "retained": 148, "retained_percentage": "25.30"},
+                {"month": "May", "users": 683, "retained": 220, "retained_percentage": "32.21"}
+            ],
+            "detailed_analysis": {
+                "monthly_breakdown": [
+                    {
+                        "month": "January", "users": 71, "retained": 23, "retained_percentage": "32.39",
+                        "detailed_analytics": {
+                            "device_distribution": {"1": 1, "2": 5, "5": 0, "unknown": 3},
+                            "goal_distribution": {"Personal Growth": 9},
+                            "country_distribution": {"unknown": 9},
+                            "subscription_patterns": {
+                                "annual_subscribers": 0, "monthly_subscribers": 0, "expired_subscribers": 9,
+                                "currently_active": 0, "total_estimated_revenue": "0.00",
+                                "android_users": 1, "ios_users": 5, "avg_time_used_minutes": "0.0000"
+                            },
+                            "usage_insights": {
+                                "heavy_users": 0, "moderate_users": 0, "light_users": 0, "inactive_users": 9,
+                                "avg_total_usage_minutes": "0.0000", "avg_current_streak": "0.0000"
+                            }
+                        },
+                        "insights": ["Excellent retention rate - above 30%"]
+                    },
+                    {
+                        "month": "February", "users": 254, "retained": 49, "retained_percentage": "19.29",
+                        "detailed_analytics": {
+                            "device_distribution": {"1": 2, "2": 19, "5": 1, "unknown": 8},
+                            "goal_distribution": {"Inner peace": 3, "Personal Growth": 29, "Stress Relief": 2},
+                            "country_distribution": {"1": 1, "91": 5, "unknown": 28},
+                            "subscription_patterns": {
+                                "annual_subscribers": 0, "monthly_subscribers": 0, "expired_subscribers": 34,
+                                "currently_active": 0, "total_estimated_revenue": "0.00",
+                                "android_users": 3, "ios_users": 19, "avg_time_used_minutes": "234.7059"
+                            },
+                            "usage_insights": {
+                                "heavy_users": 1, "moderate_users": 2, "light_users": 0, "inactive_users": 31,
+                                "avg_total_usage_minutes": "234.7059", "avg_current_streak": "0.0588"
+                            }
+                        },
+                        "insights": ["Moderate retention rate - room for improvement"]
+                    },
+                    {
+                        "month": "March", "users": 822, "retained": 209, "retained_percentage": "25.43",
+                        "detailed_analytics": {
+                            "device_distribution": {"1": 6, "2": 71, "5": 2, "unknown": 13},
+                            "goal_distribution": {"Personal Growth": 88, "Stress Relief": 6},
+                            "country_distribution": {"91": 16, "unknown": 78},
+                            "subscription_patterns": {
+                                "annual_subscribers": 1, "monthly_subscribers": 0, "expired_subscribers": 93,
+                                "currently_active": 1, "total_estimated_revenue": "99.99",
+                                "android_users": 8, "ios_users": 71, "avg_time_used_minutes": "2081.6383"
+                            },
+                            "usage_insights": {
+                                "heavy_users": 3, "moderate_users": 0, "light_users": 0, "inactive_users": 91,
+                                "avg_total_usage_minutes": "2081.6383", "avg_current_streak": "0.0319"
+                            }
+                        },
+                        "insights": ["Good retention rate - above 20%"],
+                        "sample_retained_users": [
+                            {"id": 604, "name": "Raka Dosa", "time_used_hours": 0, "current_streak": 0, "highest_streak": 3, "device_type": "iOS", "premium_till": "2022/09/25", "country": "Unknown", "goals": "Stress Relief", "level": "1"},
+                            {"id": 4143, "name": "Pankaj", "time_used_hours": 0, "current_streak": 0, "highest_streak": 0, "device_type": "iOS", "premium_till": "2022/09/25", "country": "91", "goals": "Stress Relief", "level": "1"}
+                        ]
+                    },
+                    {
+                        "month": "April", "users": 585, "retained": 148, "retained_percentage": "25.30",
+                        "detailed_analytics": {
+                            "device_distribution": {"1": 6, "2": 41, "5": 1, "unknown": 7},
+                            "goal_distribution": {"Personal Growth": 58, "Inner peace": 1},
+                            "country_distribution": {"91": 11, "unknown": 48},
+                            "subscription_patterns": {
+                                "annual_subscribers": 1, "monthly_subscribers": 1, "expired_subscribers": 57,
+                                "currently_active": 2, "total_estimated_revenue": "109.98",
+                                "android_users": 7, "ios_users": 41, "avg_time_used_minutes": "1354.2881"
+                            },
+                            "usage_insights": {
+                                "heavy_users": 3, "moderate_users": 1, "light_users": 0, "inactive_users": 55,
+                                "avg_total_usage_minutes": "1354.2881", "avg_current_streak": "0.0508"
+                            }
+                        },
+                        "insights": ["Good retention rate - above 20%"],
+                        "sample_retained_users": [
+                            {"id": 36399, "name": "Saurabh singh", "time_used_hours": 1234, "current_streak": 2, "highest_streak": 33, "device_type": "Android", "premium_till": "2025/10/22", "country": "91", "goals": "Personal Growth", "level": "19"}
+                        ]
+                    },
+                    {
+                        "month": "May", "users": 683, "retained": 220, "retained_percentage": "32.21",
+                        "detailed_analytics": {
+                            "device_distribution": {"1": 11, "2": 61, "5": 3, "unknown": 22},
+                            "goal_distribution": {"Personal Growth": 94, "Stress Relief": 7},
+                            "country_distribution": {"91": 18, "977": 2, "unknown": 81},
+                            "subscription_patterns": {
+                                "annual_subscribers": 1, "monthly_subscribers": 1, "expired_subscribers": 99,
+                                "currently_active": 2, "total_estimated_revenue": "109.98",
+                                "android_users": 14, "ios_users": 61, "avg_time_used_minutes": "774.4257"
+                            },
+                            "usage_insights": {
+                                "heavy_users": 5, "moderate_users": 1, "light_users": 0, "inactive_users": 95,
+                                "avg_total_usage_minutes": "774.4257", "avg_current_streak": "0.0792"
+                            }
+                        },
+                        "insights": ["Excellent retention rate - above 30%"]
+                    }
+                ]
+            }
+        };
+
+        function formatNumber(num) {
+            return num ? num.toLocaleString() : '0';
+        }
+
+        function createCombinedTrendChart() {
+            const ctx = document.getElementById('combinedTrendChart').getContext('2d');
+            const data = retentionData.data;
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.map(d => d.month),
+                    datasets: [{
+                        label: 'Retention Rate (%)',
+                        data: data.map(d => parseFloat(d.retained_percentage)),
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        borderWidth: 4,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#10b981',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 3,
+                        pointRadius: 8,
+                        yAxisID: 'y'
+                    }, {
+                        label: 'Total Users',
+                        data: data.map(d => d.users),
+                        type: 'bar',
+                        backgroundColor: 'rgba(59, 130, 246, 0.6)',
+                        borderColor: '#3b82f6',
+                        borderWidth: 1,
+                        yAxisID: 'y1'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top' } },
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            beginAtZero: true,
+                            max: 40,
+                            ticks: { callback: value => value + '%' },
+                            title: { display: true, text: 'Retention Rate (%)' }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            beginAtZero: true,
+                            grid: { drawOnChartArea: false },
+                            title: { display: true, text: 'Number of Users' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createDeviceDistributionChart() {
+            const ctx = document.getElementById('deviceDistributionChart').getContext('2d');
+            const totalDevices = {android: 0, ios: 0, other: 0};
+            
+            retentionData.detailed_analysis.monthly_breakdown.forEach(month => {
+                const devices = month.detailed_analytics.device_distribution;
+                // Map device types: 1 & 5 = Android, 2 = iOS, others = Other
+                totalDevices.android += (devices["1"] || 0) + (devices["5"] || 0); // Device types 1 & 5 = Android
+                totalDevices.ios += devices["2"] || 0; // Device type 2 = iOS
+                totalDevices.other += devices.unknown || 0; // All other device types
+            });
+
+            const total = totalDevices.android + totalDevices.ios + totalDevices.other;
+
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Android (Types 1 & 5)', 'iOS (Type 2)', 'Other'],
+                    datasets: [{
+                        data: [totalDevices.android, totalDevices.ios, totalDevices.other],
+                        backgroundColor: ['#10b981', '#3b82f6', '#64748b'],
+                        borderWidth: 0,
+                        hoverOffset: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+
+            const table = document.getElementById('deviceDataTable').querySelector('tbody');
+            const devices = [
+                { type: 'Android (Types 1 & 5)', count: totalDevices.android, percentage: ((totalDevices.android / total) * 100).toFixed(1) },
+                { type: 'iOS (Type 2)', count: totalDevices.ios, percentage: ((totalDevices.ios / total) * 100).toFixed(1) },
+                { type: 'Other', count: totalDevices.other, percentage: ((totalDevices.other / total) * 100).toFixed(1) }
+            ];
+
+            devices.forEach(device => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${device.type}</td>
+                    <td class="number-col">${formatNumber(device.count)}</td>
+                    <td class="number-col">${device.percentage}%</td>
+                `;
+                table.appendChild(row);
+            });
+        }
+
+        function createEngagementChart() {
+            const ctx = document.getElementById('engagementChart').getContext('2d');
+            const months = retentionData.detailed_analysis.monthly_breakdown.map(d => d.month);
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: 'Heavy Users',
+                        data: retentionData.detailed_analysis.monthly_breakdown.map(d => d.detailed_analytics.usage_insights.heavy_users),
+                        backgroundColor: '#dc2626',
+                        borderRadius: 4
+                    }, {
+                        label: 'Moderate Users',
+                        data: retentionData.detailed_analysis.monthly_breakdown.map(d => d.detailed_analytics.usage_insights.moderate_users),
+                        backgroundColor: '#f59e0b',
+                        borderRadius: 4
+                    }, {
+                        label: 'Light Users',
+                        data: retentionData.detailed_analysis.monthly_breakdown.map(d => d.detailed_analytics.usage_insights.light_users),
+                        backgroundColor: '#10b981',
+                        borderRadius: 4
+                    }, {
+                        label: 'Inactive Users',
+                        data: retentionData.detailed_analysis.monthly_breakdown.map(d => d.detailed_analytics.usage_insights.inactive_users),
+                        backgroundColor: '#6b7280',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { stacked: true },
+                        y: { stacked: true, beginAtZero: true }
+                    },
+                    plugins: { legend: { position: 'top' } }
+                }
+            });
+
+            const table = document.getElementById('engagementDataTable').querySelector('tbody');
+            retentionData.detailed_analysis.monthly_breakdown.forEach(month => {
+                const usage = month.detailed_analytics.usage_insights;
+                const total = usage.heavy_users + usage.moderate_users + usage.light_users + usage.inactive_users;
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${month.month}</td>
+                    <td class="number-col">${usage.heavy_users}</td>
+                    <td class="number-col">${usage.moderate_users}</td>
+                    <td class="number-col">${usage.light_users}</td>
+                    <td class="number-col">${usage.inactive_users}</td>
+                    <td class="number-col"><strong>${total}</strong></td>
+                `;
+                table.appendChild(row);
+            });
+        }
+
+        function createGoalChart() {
+            const ctx = document.getElementById('goalChart').getContext('2d');
+            const goalCounts = {};
+            
+            retentionData.detailed_analysis.monthly_breakdown.forEach(month => {
+                Object.keys(month.detailed_analytics.goal_distribution).forEach(goal => {
+                    goalCounts[goal] = (goalCounts[goal] || 0) + month.detailed_analytics.goal_distribution[goal];
+                });
+            });
+
+            const total = Object.values(goalCounts).reduce((sum, count) => sum + count, 0);
+
+            new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: Object.keys(goalCounts),
+                    datasets: [{
+                        data: Object.values(goalCounts),
+                        backgroundColor: ['#8b5cf6', '#f59e0b', '#10b981', '#3b82f6', '#ef4444'],
+                        borderWidth: 0,
+                        hoverOffset: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+
+            const table = document.getElementById('goalDataTable').querySelector('tbody');
+            Object.entries(goalCounts).forEach(([goal, count]) => {
+                const percentage = ((count / total) * 100).toFixed(1);
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${goal}</td>
+                    <td class="number-col">${formatNumber(count)}</td>
+                    <td class="number-col">${percentage}%</td>
+                `;
+                table.appendChild(row);
+            });
+        }
+
+        function createDeviceTrendChart() {
+            const ctx = document.getElementById('deviceTrendChart').getContext('2d');
+            const months = retentionData.detailed_analysis.monthly_breakdown.map(d => d.month);
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: 'Android Users (Types 1 & 5)',
+                        data: retentionData.detailed_analysis.monthly_breakdown.map(d => 
+                            (d.detailed_analytics.device_distribution["1"] || 0) + (d.detailed_analytics.device_distribution["5"] || 0)
+                        ),
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }, {
+                        label: 'iOS Users (Type 2)',
+                        data: retentionData.detailed_analysis.monthly_breakdown.map(d => d.detailed_analytics.device_distribution["2"] || 0),
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top' } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+
+            const table = document.getElementById('deviceTrendDataTable').querySelector('tbody');
+            retentionData.detailed_analysis.monthly_breakdown.forEach(month => {
+                const devices = month.detailed_analytics.device_distribution;
+                const android = (devices["1"] || 0) + (devices["5"] || 0);
+                const ios = devices["2"] || 0;
+                const other = devices.unknown || 0;
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${month.month}</td>
+                    <td class="number-col">${android}</td>
+                    <td class="number-col">${ios}</td>
+                    <td class="number-col">${other}</td>
+                `;
+                table.appendChild(row);
+            });
+        }
+
+        function createGeoChart() {
+            const ctx = document.getElementById('geoChart').getContext('2d');
+            const geoData = [
+                { region: 'India (91)', users: 52 },
+                { region: 'Other Countries', users: 105 },
+                { region: 'Unknown', users: 260 }
+            ];
+            const total = geoData.reduce((sum, item) => sum + item.users, 0);
+            
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: geoData.map(d => d.region),
+                    datasets: [{
+                        data: geoData.map(d => d.users),
+                        backgroundColor: ['#f97316', '#8b5cf6', '#64748b'],
+                        borderWidth: 0,
+                        hoverOffset: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+
+            const table = document.getElementById('geoDataTable').querySelector('tbody');
+            geoData.forEach(item => {
+                const percentage = ((item.users / total) * 100).toFixed(1);
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.region}</td>
+                    <td class="number-col">${formatNumber(item.users)}</td>
+                    <td class="number-col">${percentage}%</td>
+                `;
+                table.appendChild(row);
+            });
+        }
+
+        function createUsageTimeChart() {
+            const ctx = document.getElementById('usageTimeChart').getContext('2d');
+            const months = retentionData.detailed_analysis.monthly_breakdown.map(d => d.month);
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: 'Avg Usage Time (minutes)',
+                        data: retentionData.detailed_analysis.monthly_breakdown.map(d => 
+                            parseFloat(d.detailed_analytics.subscription_patterns.avg_time_used_minutes) || 0
+                        ),
+                        backgroundColor: 'rgba(139, 92, 246, 0.7)',
+                        borderColor: '#8b5cf6',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+
+            const table = document.getElementById('usageTimeDataTable').querySelector('tbody');
+            retentionData.detailed_analysis.monthly_breakdown.forEach(month => {
+                const usage = parseFloat(month.detailed_analytics.subscription_patterns.avg_time_used_minutes) || 0;
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${month.month}</td>
+                    <td class="number-col">${usage.toFixed(1)}</td>
+                    <td class="number-col">${month.users}</td>
+                `;
+                table.appendChild(row);
+            });
+        }
+
+        function populateUsageAnalytics() {
+            const container = document.getElementById('usageAnalyticsGrid');
+            retentionData.detailed_analysis.monthly_breakdown.forEach(month => {
+                const usage = month.detailed_analytics.usage_insights;
+                const subscription = month.detailed_analytics.subscription_patterns;
+                
+                const card = document.createElement('div');
+                card.className = 'usage-card';
+                card.innerHTML = `
+                    <h4>${month.month} 2025 - Usage Patterns</h4>
+                    <div class="usage-stat">
+                        <span class="label">Heavy Users:</span>
+                        <span class="value">${usage.heavy_users}</span>
+                    </div>
+                    <div class="usage-stat">
+                        <span class="label">Moderate Users:</span>
+                        <span class="value">${usage.moderate_users}</span>
+                    </div>
+                    <div class="usage-stat">
+                        <span class="label">Inactive Users:</span>
+                        <span class="value">${usage.inactive_users}</span>
+                    </div>
+                    <div class="usage-stat">
+                        <span class="label">Avg Usage Time:</span>
+                        <span class="value">${parseFloat(usage.avg_total_usage_minutes || 0).toFixed(1)} min</span>
+                    </div>
+                    <div class="usage-stat">
+                        <span class="label">Avg Current Streak:</span>
+                        <span class="value">${parseFloat(usage.avg_current_streak || 0).toFixed(2)} days</span>
+                    </div>
+                    <div class="usage-stat">
+                        <span class="label">Active Subscribers:</span>
+                        <span class="value">${subscription.currently_active}</span>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function populateMonthlyAnalyticsTable() {
+            const table = document.getElementById('monthlyAnalyticsTable');
+            const thead = table.querySelector('thead');
+            const tbody = table.querySelector('tbody');
+
+            thead.innerHTML = `
+                <tr>
+                    <th>Month</th>
+                    <th class="number-col">Users</th>
+                    <th class="number-col">Retained</th>
+                    <th class="number-col">Rate %</th>
+                    <th class="number-col">Android (Types 1 & 5)</th>
+                    <th class="number-col">iOS (Type 2)</th>
+                    <th class="number-col">Heavy Users</th>
+                    <th class="number-col">Moderate Users</th>
+                    <th class="number-col">Inactive Users</th>
+                    <th class="number-col">Active Subs</th>
+                    <th class="number-col">Avg Usage (min)</th>
+                    <th>Primary Goal</th>
+                </tr>
+            `;
+
+            retentionData.detailed_analysis.monthly_breakdown.forEach(month => {
+                const topGoal = Object.keys(month.detailed_analytics.goal_distribution)[0] || 'Unknown';
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><strong>${month.month}</strong></td>
+                    <td class="number-col">${formatNumber(month.users)}</td>
+                    <td class="number-col percentage-col">${month.retained}</td>
+                    <td class="number-col percentage-col">${month.retained_percentage}%</td>
+                    <td class="number-col"><span class="device-tag">${(month.detailed_analytics.device_distribution["1"] || 0) + (month.detailed_analytics.device_distribution["5"] || 0)}</span></td>
+                    <td class="number-col"><span class="device-tag">${month.detailed_analytics.device_distribution["2"] || 0}</span></td>
+                    <td class="number-col">${month.detailed_analytics.usage_insights.heavy_users}</td>
+                    <td class="number-col">${month.detailed_analytics.usage_insights.moderate_users}</td>
+                    <td class="number-col">${month.detailed_analytics.usage_insights.inactive_users}</td>
+                    <td class="number-col">
+                        <span class="${month.detailed_analytics.subscription_patterns.currently_active > 0 ? 'status-active' : 'status-expired'}">
+                            ${month.detailed_analytics.subscription_patterns.currently_active}
+                        </span>
+                    </td>
+                    <td class="number-col">${parseFloat(month.detailed_analytics.subscription_patterns.avg_time_used_minutes || 0).toFixed(1)}</td>
+                    <td><span class="goal-tag">${topGoal}</span></td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function populateSampleUsers() {
+            const container = document.getElementById('sampleUsersGrid');
+            let allUsers = [];
+            
+            retentionData.detailed_analysis.monthly_breakdown.forEach(month => {
+                if (month.sample_retained_users) {
+                    allUsers = allUsers.concat(month.sample_retained_users.map(user => ({...user, month: month.month})));
+                }
+            });
+
+            if (allUsers.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #64748b;">No sample user data available</p>';
+                return;
+            }
+
+            allUsers.slice(0, 6).forEach(user => {
+                const card = document.createElement('div');
+                card.className = 'user-card';
+                card.innerHTML = `
+                    <div class="user-name">${user.name} (${user.month})</div>
+                    <div class="user-stat">
+                        <span>Device:</span>
+                        <span class="device-tag">${user.device_type}</span>
+                    </div>
+                    <div class="user-stat">
+                        <span>Usage Hours:</span>
+                        <span>${user.time_used_hours}</span>
+                    </div>
+                    <div class="user-stat">
+                        <span>Current Streak:</span>
+                        <span>${user.current_streak} days</span>
+                    </div>
+                    <div class="user-stat">
+                        <span>Highest Streak:</span>
+                        <span>${user.highest_streak} days</span>
+                    </div>
+                    <div class="user-stat">
+                        <span>Level:</span>
+                        <span>${user.level}</span>
+                    </div>
+                    <div class="user-stat">
+                        <span>Goal:</span>
+                        <span class="goal-tag">${user.goals}</span>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function populateStrategicInsights() {
+            const container = document.getElementById('strategicInsights');
+            
+            const insights = [
+                {
+                    title: "Retention Performance Analysis",
+                    points: [
+                        "January and May show peak retention (32%+), indicating seasonal or operational factors",
+                        "February's low retention (19.29%) suggests potential service issues or user onboarding problems",
+                        "Overall upward trend from February through May shows improvement initiatives are working",
+                        "Average retention of 26.92% is above industry benchmarks for subscription apps"
+                    ]
+                },
+                {
+                    title: "Device & Platform Insights",
+                    points: [
+                        "iOS (Type 2) dominates with significant market penetration across all months",
+                        "Android (Types 1 & 5) shows consistent presence and represents growth opportunity",
+                        "Combined Android user base demonstrates steady engagement patterns",
+                        "Device-specific optimization strategies could improve retention rates for both platforms"
+                    ]
+                },
+                {
+                    title: "Usage Patterns & Engagement",
+                    points: [
+                        "Heavy users represent small percentage but likely drive revenue",
+                        "High inactive user percentage (85%+) indicates engagement challenges",
+                        "March shows highest usage time (2,081 minutes average)",
+                        "Streak patterns correlate with retention - focus on habit formation"
+                    ]
+                },
+                {
+                    title: "Geographic & Demographic Insights",
+                    points: [
+                        "Indian market (91 country code) shows consistent presence",
+                        "Unknown location data suggests tracking improvements needed",
+                        "Personal Growth goal dominates (84% of users)",
+                        "Goal diversification could expand market reach"
+                    ]
+                },
+                {
+                    title: "Strategic Recommendations",
+                    points: [
+                        "Investigate February issues to prevent future retention drops",
+                        "Develop Android-specific (Types 1 & 5) retention strategies",
+                        "Implement engagement programs to reduce inactive user percentage",
+                        "Enhance location tracking for better geographic insights",
+                        "Expand goal categories to capture broader user interests",
+                        "Focus on habit formation and streak building for better retention"
+                    ]
+                }
+            ];
+
+            insights.forEach(insight => {
+                const card = document.createElement('div');
+                card.className = 'insight-card';
+                card.innerHTML = `
+                    <h4>${insight.title}</h4>
+                    <ul class="insight-list">
+                        ${insight.points.map(point => `<li>${point}</li>`).join('')}
+                    </ul>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function initializeDashboard() {
+            populateUsageAnalytics();
+            populateMonthlyAnalyticsTable();
+            populateSampleUsers();
+            populateStrategicInsights();
+            
+            setTimeout(() => {
+                createCombinedTrendChart();
+                createDeviceDistributionChart();
+                createEngagementChart();
+                createGoalChart();
+                createDeviceTrendChart();
+                createGeoChart();
+                createUsageTimeChart();
+            }, 100);
+        }
+
+        initializeDashboard();
+    </script>
+</body>
+</html>

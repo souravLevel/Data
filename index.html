@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics Dashboard Hub</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #1e293b;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 48px;
+            text-align: center;
+            margin-bottom: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .header h1 {
+            font-size: 48px;
+            font-weight: 900;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 16px;
+            letter-spacing: -1px;
+        }
+
+        .header p {
+            font-size: 20px;
+            color: #64748b;
+            font-weight: 500;
+            margin-bottom: 24px;
+        }
+
+        .header .stats {
+            display: flex;
+            justify-content: center;
+            gap: 32px;
+            margin-top: 32px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-item .number {
+            font-size: 32px;
+            font-weight: 800;
+            color: #10b981;
+            font-family: 'SF Mono', Monaco, 'Consolas', monospace;
+        }
+
+        .stat-item .label {
+            font-size: 14px;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-top: 4px;
+        }
+
+        .dashboards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .dashboard-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 32px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .dashboard-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .dashboard-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .dashboard-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.15);
+        }
+
+        .dashboard-card.retention::before {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+
+        .dashboard-card.distribution::before {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .dashboard-card.payment::before {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+
+        .card-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            margin-bottom: 24px;
+        }
+
+        .retention .card-icon {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+
+        .distribution .card-icon {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .payment .card-icon {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+
+        .card-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 12px;
+        }
+
+        .card-description {
+            font-size: 16px;
+            color: #64748b;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+
+        .card-features {
+            list-style: none;
+            margin-bottom: 24px;
+        }
+
+        .card-features li {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #374151;
+        }
+
+        .card-features li::before {
+            content: "✓";
+            color: #10b981;
+            font-weight: bold;
+        }
+
+        .card-action {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .view-dashboard {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 12px 24px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .view-dashboard:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+            text-decoration: none;
+            color: white;
+        }
+
+        .last-updated {
+            font-size: 12px;
+            color: #9ca3af;
+        }
+
+        .quick-access {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 32px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .quick-access h2 {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .quick-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            justify-content: center;
+        }
+
+        .quick-link {
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 12px 20px;
+            text-decoration: none;
+            color: #374151;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .quick-link:hover {
+            border-color: #10b981;
+            background: #f0fdf4;
+            color: #065f46;
+            transform: translateY(-2px);
+            text-decoration: none;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 60px;
+            padding: 32px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            backdrop-filter: blur(20px);
+        }
+
+        .footer p {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 16px;
+            }
+
+            .header {
+                padding: 32px 24px;
+            }
+
+            .header h1 {
+                font-size: 36px;
+            }
+
+            .header .stats {
+                flex-direction: column;
+                gap: 20px;
+            }
+
+            .dashboards-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .quick-links {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Status Indicators */
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-online {
+            background: #10b981;
+            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3);
+        }
+
+        .status-offline {
+            background: #ef4444;
+            box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Analytics Dashboard Hub</h1>
+            <p>Comprehensive user analytics and business intelligence platform</p>
+            
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="number">3</div>
+                    <div class="label">Dashboards</div>
+                </div>
+                <div class="stat-item">
+                    <div class="number">15+</div>
+                    <div class="label">Key Metrics</div>
+                </div>
+                <div class="stat-item">
+                    <div class="number">Live</div>
+                    <div class="label">Data Status</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboards-grid">
+            <div class="dashboard-card retention" onclick="openDashboard('retention.html')">
+                <div class="card-icon">📊</div>
+                <h3 class="card-title">User Retention Analysis</h3>
+                <p class="card-description">
+                    Comprehensive analysis of user retention patterns, subscription renewals, and churn rates across different markets and payment platforms.
+                </p>
+                
+                <ul class="card-features">
+                    <li>Monthly retention rates tracking</li>
+                    <li>Currency-based performance analysis</li>
+                    <li>Platform distribution insights</li>
+                    <li>Interactive filtering capabilities</li>
+                    <li>INR vs Non-INR market comparison</li>
+                </ul>
+                
+                <div class="card-action">
+                    <div class="last-updated">
+                        <span class="status-indicator status-online"></span>
+                        Last updated: June 2025
+                    </div>
+                    <a href="retention.html" class="view-dashboard">
+                        View Dashboard →
+                    </a>
+                </div>
+            </div>
+
+            <div class="dashboard-card distribution" onclick="openDashboard('distribution.html')">
+                <div class="card-icon">📈</div>
+                <h3 class="card-title">User Distribution Dashboard</h3>
+                <p class="card-description">
+                    Month-on-month breakdown of user categories showing distribution patterns across Low End, Mid End, High End, and Uncertain segments.
+                </p>
+                
+                <ul class="card-features">
+                    <li>User category distribution trends</li>
+                    <li>Monthly volume analysis</li>
+                    <li>Stacked distribution visualization</li>
+                    <li>Historical pattern recognition</li>
+                    <li>Category-specific insights</li>
+                </ul>
+                
+                <div class="card-action">
+                    <div class="last-updated">
+                        <span class="status-indicator status-online"></span>
+                        Last updated: June 2025
+                    </div>
+                    <a href="distribution.html" class="view-dashboard">
+                        View Dashboard →
+                    </a>
+                </div>
+            </div>
+
+            <div class="dashboard-card payment" onclick="openDashboard('payment-analysis.html')">
+                <div class="card-icon">💳</div>
+                <h3 class="card-title">Payment Behavior Analysis</h3>
+                <p class="card-description">
+                    Advanced analysis comparing all users versus users with lifetime payment history, providing insights into conversion patterns and user value segmentation.
+                </p>
+                
+                <ul class="card-features">
+                    <li>Paid vs non-paid user comparison</li>
+                    <li>Lifetime value segmentation</li>
+                    <li>Payment conversion tracking</li>
+                    <li>Distribution category analysis</li>
+                    <li>Strategic recommendations</li>
+                </ul>
+                
+                <div class="card-action">
+                    <div class="last-updated">
+                        <span class="status-indicator status-online"></span>
+                        Last updated: June 2025
+                    </div>
+                    <a href="payment-analysis.html" class="view-dashboard">
+                        View Dashboard →
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="quick-access">
+            <h2>Quick Access Links</h2>
+            <div class="quick-links">
+                <a href="retention.html" class="quick-link">📊 Retention Analytics</a>
+                <a href="distribution.html" class="quick-link">📈 Distribution Trends</a>
+                <a href="payment-analysis.html" class="quick-link">💳 Payment Analysis</a>
+                <a href="#" class="quick-link" onclick="downloadReports()">📄 Download Reports</a>
+                <a href="#" class="quick-link" onclick="showHelp()">❓ Help & Documentation</a>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Analytics Dashboard Hub • Real-time Business Intelligence • Last Sync: <span id="lastSync">-</span></p>
+        </div>
+    </div>
+
+    <script>
+        // Dashboard functionality
+        function openDashboard(url) {
+            window.open(url, '_blank');
+        }
+
+        function downloadReports() {
+            alert('Report download functionality would be implemented here. This could generate PDF reports or CSV exports of the analytics data.');
+        }
+
+        function showHelp() {
+            alert('Help documentation would be displayed here, including:\n\n• How to navigate dashboards\n• Understanding metrics\n• Interpreting data visualizations\n• Troubleshooting common issues');
+        }
+
+        // Update last sync time
+        function updateLastSync() {
+            const now = new Date();
+            const timeString = now.toLocaleString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            document.getElementById('lastSync').textContent = timeString;
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            updateLastSync();
+            
+            // Update sync time every minute
+            setInterval(updateLastSync, 60000);
+            
+            // Add keyboard shortcuts
+            document.addEventListener('keydown', function(e) {
+                if (e.altKey) {
+                    switch(e.key) {
+                        case '1':
+                            e.preventDefault();
+                            openDashboard('retention.html');
+                            break;
+                        case '2':
+                            e.preventDefault();
+                            openDashboard('distribution.html');
+                            break;
+                        case '3':
+                            e.preventDefault();
+                            openDashboard('payment-analysis.html');
+                            break;
+                    }
+                }
+            });
+        });
+
+        // Add loading states for dashboard cards
+        document.querySelectorAll('.dashboard-card').forEach(card => {
+            card.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') return; // Don't interfere with direct links
+                
+                const button = this.querySelector('.view-dashboard');
+                const originalText = button.innerHTML;
+                button.innerHTML = '<span class="loading"></span> Loading...';
+                
+                setTimeout(() => {
+                    button.innerHTML = originalText;
+                }, 1000);
+            });
+        });
+
+        // Performance monitoring
+        if ('performance' in window) {
+            window.addEventListener('load', function() {
+                const loadTime = performance.timing.loadEventEnd - performance.timing.navigationStart;
+                console.log(`Dashboard hub loaded in ${loadTime}ms`);
+            });
+        }
+    </script>
+</body>
+</html>

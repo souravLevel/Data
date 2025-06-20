@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paid Users Intent-Based Distribution Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #1e293b;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 32px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .header h1 {
+            font-size: 36px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 12px;
+        }
+        .header p {
+            color: #64748b;
+            font-size: 18px;
+            font-weight: 500;
+        }
+        .header .highlight {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 16px;
+            display: inline-block;
+        }
+        
+        /* Summary Cards */
+        .summary-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 32px;
+            margin-bottom: 32px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .summary-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 24px;
+        }
+        .summary-card {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            border-left: 5px solid;
+        }
+        .summary-card.segment1 { border-left-color: #3b82f6; }
+        .summary-card.segment2 { border-left-color: #10b981; }
+        .summary-card.combined { border-left-color: #8b5cf6; }
+        .summary-card h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #64748b;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .summary-card .value {
+            font-size: 32px;
+            font-weight: 800;
+            font-family: 'SF Mono', Monaco, 'Consolas', monospace;
+            margin-bottom: 8px;
+        }
+        .summary-card.segment1 .value { color: #3b82f6; }
+        .summary-card.segment2 .value { color: #10b981; }
+        .summary-card.combined .value { color: #8b5cf6; }
+        .summary-card .subtitle {
+            font-size: 14px;
+            color: #64748b;
+        }
+        
+        /* Charts Section */
+        .charts-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+        .chart-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 32px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .chart-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 24px;
+            color: #1e293b;
+            text-align: center;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 12px;
+        }
+        .chart-wrapper {
+            position: relative;
+            height: 350px;
+        }
+        .full-width {
+            grid-column: 1 / -1;
+        }
+        
+        /* Comparison Section */
+        .comparison-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+        
+        /* Data Tables */
+        .data-table {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            margin-bottom: 32px;
+        }
+        .table-header {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 20px 24px;
+            font-size: 18px;
+            font-weight: 700;
+        }
+        .table-container {
+            overflow-x: auto;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 14px;
+        }
+        th {
+            background: rgba(16, 185, 129, 0.05);
+            font-weight: 700;
+            color: #065f46;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        tr:hover {
+            background: rgba(16, 185, 129, 0.05);
+        }
+        .number-col {
+            text-align: right;
+            font-family: 'SF Mono', Monaco, 'Consolas', monospace;
+        }
+        .month-col {
+            font-weight: 600;
+            color: #1e293b;
+        }
+        
+        /* Color coding for different categories */
+        .low-end { color: #059669; }
+        .mid-end { color: #0284c7; }
+        .high-end { color: #7c3aed; }
+        .uncertain { color: #dc2626; }
+        .total { color: #1e293b; font-weight: 700; }
+        
+        /* Insights Section */
+        .insights-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 32px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .insights-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 24px;
+        }
+        .insight-card {
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            border-radius: 16px;
+            padding: 24px;
+            border-left: 5px solid #10b981;
+        }
+        .insight-card h4 {
+            font-size: 18px;
+            font-weight: 700;
+            color: #065f46;
+            margin-bottom: 16px;
+        }
+        .insight-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .insight-list li {
+            padding: 8px 0;
+            color: #374151;
+            border-bottom: 1px solid rgba(16, 185, 129, 0.2);
+            position: relative;
+            padding-left: 20px;
+        }
+        .insight-list li:before {
+            content: "💡";
+            position: absolute;
+            left: 0;
+        }
+        .insight-list li:last-child {
+            border-bottom: none;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .charts-section {
+                grid-template-columns: 1fr;
+            }
+            .comparison-section {
+                grid-template-columns: 1fr;
+            }
+        }
+        @media (max-width: 768px) {
+            .container {
+                padding: 12px;
+            }
+            .header {
+                padding: 24px;
+            }
+            .header h1 {
+                font-size: 28px;
+            }
+            .summary-grid {
+                grid-template-columns: 1fr;
+            }
+            .chart-wrapper {
+                height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>User Distribution by Payment History</h1>
+            <p>Month-on-month analysis comparing all users vs users who have paid at least once in their lifetime</p>
+            <div class="highlight">Payment Behavior Analytics • Lifetime Value Segmentation</div>
+        </div>
+
+        <!-- Summary Section -->
+        <div class="summary-section">
+            <div class="summary-title">User Distribution Summary</div>
+            <div class="summary-grid">
+                <div class="summary-card segment1">
+                    <h3>All Users Total</h3>
+                    <div class="value" id="segment1Total">-</div>
+                    <div class="subtitle">Complete User Base</div>
+                </div>
+                <div class="summary-card segment2">
+                    <h3>Paid Users Total</h3>
+                    <div class="value" id="segment2Total">-</div>
+                    <div class="subtitle">Lifetime Payment History</div>
+                </div>
+                <div class="summary-card combined">
+                    <h3>Combined Total</h3>
+                    <div class="value" id="combinedTotal">-</div>
+                    <div class="subtitle">All User Activity</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Charts -->
+        <div class="charts-section">
+            <div class="chart-container">
+                <div class="chart-title">📈 Combined User Trends Over Time</div>
+                <div class="chart-wrapper">
+                    <canvas id="combinedTrendChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title">🔍 All Users vs Paid Users Comparison</div>
+                <div class="chart-wrapper">
+                    <canvas id="segmentComparisonChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Distribution Analysis -->
+        <div class="charts-section">
+            <div class="chart-container full-width">
+                <div class="chart-title">📊 Monthly Distribution Categories (Stacked View)</div>
+                <div class="chart-wrapper">
+                    <canvas id="distributionStackedChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Comparison Charts -->
+        <div class="comparison-section">
+            <div class="chart-container">
+                <div class="chart-title">👥 All Users Distribution</div>
+                <div class="chart-wrapper">
+                    <canvas id="segment1Chart"></canvas>
+                </div>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title">💳 Paid Users Distribution</div>
+                <div class="chart-wrapper">
+                    <canvas id="segment2Chart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detailed Data Table -->
+        <div class="data-table">
+            <div class="table-header">📋 Comprehensive Monthly Breakdown</div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="month-col">Month</th>
+                            <th class="number-col">All Users Low</th>
+                            <th class="number-col">All Users Mid</th>
+                            <th class="number-col">All Users High</th>
+                            <th class="number-col">All Users Total</th>
+                            <th class="number-col">Paid Users Low</th>
+                            <th class="number-col">Paid Users Mid</th>
+                            <th class="number-col">Paid Users High</th>
+                            <th class="number-col">Paid Users Total</th>
+                            <th class="number-col">Combined Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="detailedTableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Insights -->
+        <div class="insights-section">
+            <div class="chart-title">💡 Key Insights & Recommendations</div>
+            <div class="insights-grid" id="insightsGrid">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Processed data from analysis
+        const paidUsersData = {
+            "Sep 2024": {
+                "Segment 1": {"Low End": 241, "Mid End": 5902, "High End": 23845, "Uncertain": 678922, "Total": 708910},
+                "Segment 2": {"Low End": 11, "Mid End": 275, "High End": 1953, "Uncertain": 666, "Total": 2905},
+                "Combined": {"Low End": 252, "Mid End": 6177, "High End": 25798, "Uncertain": 679588, "Total": 711815}
+            },
+            "Oct 2024": {
+                "Segment 1": {"Low End": 23, "Mid End": 332, "High End": 4539, "Uncertain": 441431, "Total": 446325},
+                "Segment 2": {"Low End": 3, "Mid End": 20, "High End": 356, "Uncertain": 579, "Total": 958},
+                "Combined": {"Low End": 26, "Mid End": 352, "High End": 4895, "Uncertain": 442010, "Total": 447283}
+            },
+            "Nov 2024": {
+                "Segment 1": {"Low End": 422, "Mid End": 8989, "High End": 21852, "Uncertain": 22565, "Total": 53828},
+                "Segment 2": {"Low End": 6, "Mid End": 238, "High End": 1393, "Uncertain": 43, "Total": 1680},
+                "Combined": {"Low End": 428, "Mid End": 9227, "High End": 23245, "Uncertain": 22608, "Total": 55508}
+            },
+            "Dec 2024": {
+                "Segment 1": {"Low End": 412, "Mid End": 8096, "High End": 15833, "Uncertain": 400066, "Total": 424407},
+                "Segment 2": {"Low End": 6, "Mid End": 154, "High End": 1035, "Uncertain": 19, "Total": 1214},
+                "Combined": {"Low End": 418, "Mid End": 8250, "High End": 16868, "Uncertain": 400085, "Total": 425621}
+            },
+            "Jan 2025": {
+                "Segment 1": {"Low End": 430, "Mid End": 8757, "High End": 16656, "Uncertain": 5162, "Total": 31005},
+                "Segment 2": {"Low End": 5, "Mid End": 141, "High End": 832, "Uncertain": 28, "Total": 1006},
+                "Combined": {"Low End": 435, "Mid End": 8898, "High End": 17488, "Uncertain": 5190, "Total": 32011}
+            },
+            "Feb 2025": {
+                "Segment 1": {"Low End": 211, "Mid End": 4611, "High End": 8269, "Uncertain": 69152, "Total": 82243},
+                "Segment 2": {"Low End": 1, "Mid End": 47, "High End": 268, "Uncertain": 9, "Total": 325},
+                "Combined": {"Low End": 212, "Mid End": 4658, "High End": 8537, "Uncertain": 69161, "Total": 82568}
+            },
+            "Mar 2025": {
+                "Segment 1": {"Low End": 126, "Mid End": 2771, "High End": 5042, "Uncertain": 2917, "Total": 10856},
+                "Segment 2": {"Low End": 0, "Mid End": 33, "High End": 114, "Uncertain": 5, "Total": 152},
+                "Combined": {"Low End": 126, "Mid End": 2804, "High End": 5156, "Uncertain": 2922, "Total": 11008}
+            },
+            "Apr 2025": {
+                "Segment 1": {"Low End": 318, "Mid End": 3014, "High End": 4214, "Uncertain": 3251, "Total": 10797},
+                "Segment 2": {"Low End": 0, "Mid End": 18, "High End": 72, "Uncertain": 3, "Total": 93},
+                "Combined": {"Low End": 318, "Mid End": 3032, "High End": 4286, "Uncertain": 3254, "Total": 10890}
+            },
+            "May 2025": {
+                "Segment 1": {"Low End": 156, "Mid End": 1485, "High End": 2926, "Uncertain": 3574, "Total": 8141},
+                "Segment 2": {"Low End": 0, "Mid End": 6, "High End": 39, "Uncertain": 0, "Total": 45},
+                "Combined": {"Low End": 156, "Mid End": 1491, "High End": 2965, "Uncertain": 3574, "Total": 8186}
+            },
+            "Jun 2025": {
+                "Segment 1": {"Low End": 49, "Mid End": 436, "High End": 873, "Uncertain": 1182, "Total": 2540},
+                "Segment 2": {"Low End": 0, "Mid End": 2, "High End": 12, "Uncertain": 0, "Total": 14},
+                "Combined": {"Low End": 49, "Mid End": 438, "High End": 885, "Uncertain": 1182, "Total": 2554}
+            }
+        };
+
+        const months = Object.keys(paidUsersData);
+
+        function formatNumber(num) {
+            return num.toLocaleString();
+        }
+
+        function calculateTotals() {
+            let segment1Total = 0, segment2Total = 0, combinedTotal = 0;
+            
+            months.forEach(month => {
+                segment1Total += paidUsersData[month]["Segment 1"]["Total"];
+                segment2Total += paidUsersData[month]["Segment 2"]["Total"];
+                combinedTotal += paidUsersData[month]["Combined"]["Total"];
+            });
+
+            document.getElementById('segment1Total').textContent = formatNumber(segment1Total);
+            document.getElementById('segment2Total').textContent = formatNumber(segment2Total);
+            document.getElementById('combinedTotal').textContent = formatNumber(combinedTotal);
+        }
+
+        function createCombinedTrendChart() {
+            const ctx = document.getElementById('combinedTrendChart').getContext('2d');
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: 'Combined Total Users',
+                        data: months.map(month => paidUsersData[month]["Combined"]["Total"]),
+                        borderColor: '#8b5cf6',
+                        backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                        borderWidth: 4,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#8b5cf6',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 3,
+                        pointRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return formatNumber(value);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createSegmentComparisonChart() {
+            const ctx = document.getElementById('segmentComparisonChart').getContext('2d');
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: 'All Users',
+                        data: months.map(month => paidUsersData[month]["Segment 1"]["Total"]),
+                        backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                        borderColor: '#3b82f6',
+                        borderWidth: 1
+                    }, {
+                        label: 'Paid Users',
+                        data: months.map(month => paidUsersData[month]["Segment 2"]["Total"]),
+                        backgroundColor: 'rgba(16, 185, 129, 0.8)',
+                        borderColor: '#10b981',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top' } },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return formatNumber(value);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createDistributionStackedChart() {
+            const ctx = document.getElementById('distributionStackedChart').getContext('2d');
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: 'Low End',
+                        data: months.map(month => paidUsersData[month]["Combined"]["Low End"]),
+                        backgroundColor: '#059669',
+                        borderWidth: 0
+                    }, {
+                        label: 'Mid End',
+                        data: months.map(month => paidUsersData[month]["Combined"]["Mid End"]),
+                        backgroundColor: '#0284c7',
+                        borderWidth: 0
+                    }, {
+                        label: 'High End',
+                        data: months.map(month => paidUsersData[month]["Combined"]["High End"]),
+                        backgroundColor: '#7c3aed',
+                        borderWidth: 0
+                    }, {
+                        label: 'Uncertain',
+                        data: months.map(month => paidUsersData[month]["Combined"]["Uncertain"]),
+                        backgroundColor: '#dc2626',
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top' } },
+                    scales: {
+                        x: { stacked: true },
+                        y: {
+                            stacked: true,
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return formatNumber(value);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createSegment1Chart() {
+            const ctx = document.getElementById('segment1Chart').getContext('2d');
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: 'Low End',
+                        data: months.map(month => paidUsersData[month]["Segment 1"]["Low End"]),
+                        borderColor: '#059669',
+                        backgroundColor: 'rgba(5, 150, 105, 0.1)',
+                        borderWidth: 3,
+                        tension: 0.4,
+                        fill: true
+                    }, {
+                        label: 'Mid End',
+                        data: months.map(month => paidUsersData[month]["Segment 1"]["Mid End"]),
+                        borderColor: '#0284c7',
+                        backgroundColor: 'rgba(2, 132, 199, 0.1)',
+                        borderWidth: 3,
+                        tension: 0.4,
+                        fill: true
+                    }, {
+                        label: 'High End',
+                        data: months.map(month => paidUsersData[month]["Segment 1"]["High End"]),
+                        borderColor: '#7c3aed',
+                        backgroundColor: 'rgba(124, 58, 237, 0.1)',
+                        borderWidth: 3,
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top' } },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return formatNumber(value);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createSegment2Chart() {
+            const ctx = document.getElementById('segment2Chart').getContext('2d');
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: 'Low End',
+                        data: months.map(month => paidUsersData[month]["Segment 2"]["Low End"]),
+                        borderColor: '#059669',
+                        backgroundColor: 'rgba(5, 150, 105, 0.1)',
+                        borderWidth: 3,
+                        tension: 0.4,
+                        fill: true
+                    }, {
+                        label: 'Mid End',
+                        data: months.map(month => paidUsersData[month]["Segment 2"]["Mid End"]),
+                        borderColor: '#0284c7',
+                        backgroundColor: 'rgba(2, 132, 199, 0.1)',
+                        borderWidth: 3,
+                        tension: 0.4,
+                        fill: true
+                    }, {
+                        label: 'High End',
+                        data: months.map(month => paidUsersData[month]["Segment 2"]["High End"]),
+                        borderColor: '#7c3aed',
+                        backgroundColor: 'rgba(124, 58, 237, 0.1)',
+                        borderWidth: 3,
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top' } },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return formatNumber(value);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function populateDetailedTable() {
+            const tbody = document.getElementById('detailedTableBody');
+            
+            months.forEach(month => {
+                const data = paidUsersData[month];
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="month-col">${month}</td>
+                    <td class="number-col low-end">${formatNumber(data["Segment 1"]["Low End"])}</td>
+                    <td class="number-col mid-end">${formatNumber(data["Segment 1"]["Mid End"])}</td>
+                    <td class="number-col high-end">${formatNumber(data["Segment 1"]["High End"])}</td>
+                    <td class="number-col total">${formatNumber(data["Segment 1"]["Total"])}</td>
+                    <td class="number-col low-end">${formatNumber(data["Segment 2"]["Low End"])}</td>
+                    <td class="number-col mid-end">${formatNumber(data["Segment 2"]["Mid End"])}</td>
+                    <td class="number-col high-end">${formatNumber(data["Segment 2"]["High End"])}</td>
+                    <td class="number-col total">${formatNumber(data["Segment 2"]["Total"])}</td>
+                    <td class="number-col total">${formatNumber(data["Combined"]["Total"])}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function populateInsights() {
+            const container = document.getElementById('insightsGrid');
+            
+            const insights = [
+                {
+                    title: "Payment Behavior Analysis",
+                    points: [
+                        "All users (Segment 1) represent 99.5% of total user base across all months",
+                        "Paid users (Segment 2) show declining trend from 2,905 users in Sep 2024 to 14 in Jun 2025",
+                        "Payment conversion rate is extremely low at 0.5% of total user base",
+                        "Both user groups show overall volume decline from peak in Sep-Oct 2024"
+                    ]
+                },
+                {
+                    title: "Distribution Category Insights",
+                    points: [
+                        "High-end users dominate both all users and paid users categories",
+                        "Paid users show cleaner distribution with minimal uncertain classifications",
+                        "All users have significant uncertain category spikes in Sep/Oct/Dec 2024",
+                        "Mid-end users show more stable patterns in paid user segment"
+                    ]
+                },
+                {
+                    title: "Conversion & Retention Patterns",
+                    points: [
+                        "September 2024 shows peak activity with highest payment conversions",
+                        "87% overall decline in user activity from 2024 to 2025",
+                        "Paid users maintain better data quality and classification accuracy",
+                        "2025 months show stabilized but significantly lower user volumes"
+                    ]
+                },
+                {
+                    title: "Strategic Recommendations",
+                    points: [
+                        "Urgent need to improve payment conversion rates from current 0.5%",
+                        "Focus retention strategies on existing paid users as they show higher value",
+                        "Investigate successful payment drivers from Sep-Oct 2024 peak period",
+                        "Develop targeted conversion campaigns for high-end all users",
+                        "Improve user classification to reduce uncertain categories",
+                        "Create separate engagement strategies for paid vs non-paid user segments"
+                    ]
+                }
+            ];
+
+            insights.forEach(insight => {
+                const card = document.createElement('div');
+                card.className = 'insight-card';
+                card.innerHTML = `
+                    <h4>${insight.title}</h4>
+                    <ul class="insight-list">
+                        ${insight.points.map(point => `<li>${point}</li>`).join('')}
+                    </ul>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Initialize dashboard
+        function initializeDashboard() {
+            calculateTotals();
+            populateDetailedTable();
+            populateInsights();
+            
+            setTimeout(() => {
+                createCombinedTrendChart();
+                createSegmentComparisonChart();
+                createDistributionStackedChart();
+                createSegment1Chart();
+                createSegment2Chart();
+            }, 100);
+        }
+
+        initializeDashboard();
+    </script>
+</body>
+</html>
